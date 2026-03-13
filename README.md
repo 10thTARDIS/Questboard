@@ -2,6 +2,10 @@
 
 A self-hosted TTRPG session scheduling tool. The GM proposes time slots, players vote, and the group gets reminded via Discord before every session.
 
+### AI Usage Disclaimer
+
+This project has been created with the assistance of Claude Code, which is an AI coding tool, and may contain errors or vulnerabilities.  Review the code before running it to ensure you are comfortable with the risks.
+
 ## Features
 
 - **OIDC authentication** — works with Authentik, Keycloak, Google, or any compliant provider; no passwords stored
