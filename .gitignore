@@ -1,0 +1,48 @@
+# ── Secrets ────────────────────────────────────────────────────────────────────
+.env
+
+# ── Python ─────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+pip-wheel-metadata/
+*.egg
+
+# ── Pytest / coverage ──────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# ── Alembic ────────────────────────────────────────────────────────────────────
+# Keep the versions directory but ignore any generated __pycache__
+
+# ── Node / frontend ────────────────────────────────────────────────────────────
+node_modules/
+dist/
+.vite/
+*.local
+
+# ── Editor / OS ────────────────────────────────────────────────────────────────
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+Thumbs.db
+
+# ── Docker ─────────────────────────────────────────────────────────────────────
+*.log
+
+# ── Celery ─────────────────────────────────────────────────────────────────────
+celerybeat-schedule
+celerybeat.pid

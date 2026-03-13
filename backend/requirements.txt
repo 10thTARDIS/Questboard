@@ -1,0 +1,28 @@
+# Generated with pip-compile. Do not edit manually.
+# Regenerate with: pip-compile requirements.in
+
+# ── Web framework ──────────────────────────────────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# ── Database ───────────────────────────────────────────────────────────────────
+sqlalchemy[asyncio]==2.0.36
+asyncpg==0.30.0
+alembic==1.14.0
+
+# ── Authentication ─────────────────────────────────────────────────────────────
+authlib==1.4.0
+httpx==0.28.1
+
+# ── Cache / sessions ───────────────────────────────────────────────────────────
+redis==5.2.1
+
+# ── Task queue ─────────────────────────────────────────────────────────────────
+celery[redis]==5.4.0
+
+# ── Configuration ──────────────────────────────────────────────────────────────
+pydantic-settings==2.7.0
+
+# ── Rate limiting ──────────────────────────────────────────────────────────────
+slowapi==0.1.9

@@ -1,0 +1,14 @@
+repos:
+  - repo: https://github.com/pypa/pip-audit
+    rev: v2.7.3
+    hooks:
+      - id: pip-audit
+        args: [--requirement, backend/requirements.txt]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      - id: ruff
+        args: [--fix, backend/]
+      - id: ruff-format
+        args: [backend/]

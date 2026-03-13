@@ -1,0 +1,45 @@
+services:
+  db:
+    restart: unless-stopped
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    # Remove dev bind mount of init SQL in favour of baked-in volume only
+
+  redis:
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      target: production
+    volumes: []  # No bind mounts in production
+    restart: unless-stopped
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
+
+  worker:
+    build:
+      context: ./backend
+      target: production
+    volumes: []
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=2
+
+  beat:
+    build:
+      context: ./backend
+      target: production
+    volumes: []
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app beat --loglevel=info
+
+  frontend:
+    build:
+      context: ./frontend
+      target: production
+    volumes: []
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    # Nginx serves built assets and proxies /api → backend:8000
+    # The dev port 5173 binding is replaced by 80 above
