@@ -120,46 +120,52 @@ async def callback(
     issuer: str = discovery["issuer"]
 
     # ── 4. Upsert user record ──────────────────────────────────────────────────
-    result = await db.execute(
-        select(User).where(User.oidc_sub == sub, User.oidc_issuer == issuer)
-    )
-    user = result.scalar_one_or_none()
+    try:
+        result = await db.execute(
+            select(User).where(User.oidc_sub == sub, User.oidc_issuer == issuer)
+        )
+        user = result.scalar_one_or_none()
 
-    if user is None:
-        # New user — check invite code gate
-        if settings.invite_code and not hmac.compare_digest(invite_code, settings.invite_code):
-            return _error_redirect(
-                "A valid invite code is required to register. "
-                "Please ask your GM for an invite code and try again."
+        if user is None:
+            # New user — check invite code gate
+            if settings.invite_code and not hmac.compare_digest(invite_code, settings.invite_code):
+                return _error_redirect(
+                    "A valid invite code is required to register. "
+                    "Please ask your GM for an invite code and try again."
+                )
+            user = User(
+                id=uuid.uuid4(),
+                oidc_sub=sub,
+                oidc_issuer=issuer,
+                display_name=(
+                    userinfo.get("name")
+                    or userinfo.get("preferred_username")
+                    or sub
+                ),
+                email=userinfo.get("email"),
+                avatar_url=userinfo.get("picture"),
             )
-        user = User(
-            id=uuid.uuid4(),
-            oidc_sub=sub,
-            oidc_issuer=issuer,
-            display_name=(
+            db.add(user)
+            await db.flush()
+        else:
+            # Existing user — refresh profile from provider
+            user.display_name = (
                 userinfo.get("name")
                 or userinfo.get("preferred_username")
-                or sub
-            ),
-            email=userinfo.get("email"),
-            avatar_url=userinfo.get("picture"),
-        )
-        db.add(user)
-        await db.flush()
-    else:
-        # Existing user — refresh profile from provider
-        user.display_name = (
-            userinfo.get("name")
-            or userinfo.get("preferred_username")
-            or user.display_name
-        )
-        if userinfo.get("email"):
-            user.email = userinfo["email"]
-        if userinfo.get("picture"):
-            user.avatar_url = userinfo["picture"]
+                or user.display_name
+            )
+            if userinfo.get("email"):
+                user.email = userinfo["email"]
+            if userinfo.get("picture"):
+                user.avatar_url = userinfo["picture"]
 
-    await db.commit()
-    await db.refresh(user)
+        await db.commit()
+        await db.refresh(user)
+    except Exception:
+        return _error_redirect(
+            "A database error occurred while creating your account. "
+            "Please contact the administrator."
+        )
 
     # ── 5. Create server-side session and set cookie ───────────────────────────
     session_id = await create_session(str(user.id))

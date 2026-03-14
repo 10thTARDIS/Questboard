@@ -19,16 +19,6 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    # ── PostgreSQL ENUM types ──────────────────────────────────────────────────
-    # Created before the tables that reference them.
-    op.execute("CREATE TYPE memberrole AS ENUM ('gm', 'player')")
-    op.execute("CREATE TYPE schedulingmode AS ENUM ('vote', 'direct', 'tentative')")
-    op.execute(
-        "CREATE TYPE sessionstatus AS ENUM "
-        "('proposed', 'confirmed', 'completed', 'cancelled')"
-    )
-    op.execute("CREATE TYPE availability AS ENUM ('yes', 'maybe', 'no')")
-
     # ── users ──────────────────────────────────────────────────────────────────
     op.create_table(
         "users",
@@ -68,13 +58,14 @@ def upgrade() -> None:
     )
 
     # ── campaign_members ───────────────────────────────────────────────────────
+    # memberrole enum is created automatically by SQLAlchemy on first use here.
     op.create_table(
         "campaign_members",
         sa.Column("campaign_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column(
             "role",
-            sa.Enum("gm", "player", name="memberrole", create_type=False),
+            sa.Enum("gm", "player", name="memberrole"),
             nullable=False,
         ),
         sa.Column(
@@ -93,6 +84,7 @@ def upgrade() -> None:
     )
 
     # ── sessions ───────────────────────────────────────────────────────────────
+    # schedulingmode and sessionstatus enums are created automatically here.
     op.create_table(
         "sessions",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
@@ -101,7 +93,7 @@ def upgrade() -> None:
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column(
             "scheduling_mode",
-            sa.Enum("vote", "direct", "tentative", name="schedulingmode", create_type=False),
+            sa.Enum("vote", "direct", "tentative", name="schedulingmode"),
             nullable=False,
         ),
         sa.Column(
@@ -109,7 +101,6 @@ def upgrade() -> None:
             sa.Enum(
                 "proposed", "confirmed", "completed", "cancelled",
                 name="sessionstatus",
-                create_type=False,
             ),
             nullable=False,
             server_default=sa.text("'proposed'"),
@@ -152,6 +143,7 @@ def upgrade() -> None:
     op.create_index("ix_time_slots_session_id", "time_slots", ["session_id"])
 
     # ── votes ──────────────────────────────────────────────────────────────────
+    # availability enum is created automatically here.
     op.create_table(
         "votes",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
@@ -159,7 +151,7 @@ def upgrade() -> None:
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column(
             "availability",
-            sa.Enum("yes", "maybe", "no", name="availability", create_type=False),
+            sa.Enum("yes", "maybe", "no", name="availability"),
             nullable=False,
         ),
         sa.Column(
