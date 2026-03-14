@@ -31,7 +31,7 @@ This project has been created with the assistance of Claude Code, which is an AI
 ### 1. Clone and configure
 
 ```bash
-git clone <your-fork> quest-board
+git clone https://github.com/10thTARDIS/Questboard quest-board
 cd quest-board
 cp .env.example .env
 ```

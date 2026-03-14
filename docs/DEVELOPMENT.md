@@ -37,8 +37,8 @@ This guide covers everything you need to get a local development environment run
 
 ```bash
 # 1. Clone the repository
-git clone <repo-url>
-cd "QuestBoard - Scheduling Tool"
+git clone https://github.com/10thTARDIS/Questboard quest-board
+cd quest-board
 
 # 2. Copy and edit the environment file
 cp .env.example .env
