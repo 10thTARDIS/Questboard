@@ -14,7 +14,6 @@ services:
       context: ./backend
       target: production
     volumes: []  # No bind mounts in production
-    ports: []    # No host port exposure — Nginx proxies /api and /auth internally
     restart: unless-stopped
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2
 

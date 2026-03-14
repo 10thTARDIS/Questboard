@@ -1,0 +1,17 @@
+# Development port bindings.
+#
+# Docker Compose auto-loads this file when no -f flags are used (dev workflow).
+# It is NOT loaded when production uses explicit -f flags:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#
+# Keeping port bindings here (rather than docker-compose.yml) prevents the
+# backend port from being inherited — and conflicting — in production.
+
+services:
+  backend:
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+  frontend:
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"

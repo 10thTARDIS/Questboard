@@ -34,8 +34,6 @@ services:
     env_file: .env
     volumes:
       - ./backend:/app
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -82,8 +80,6 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    ports:
-      - "${FRONTEND_PORT:-5173}:5173"
     command: npm run dev -- --host 0.0.0.0
     restart: unless-stopped
 
