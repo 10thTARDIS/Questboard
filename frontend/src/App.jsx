@@ -9,6 +9,7 @@ import CampaignDetail from "./pages/CampaignDetail.jsx";
 import SessionDetail from "./pages/SessionDetail.jsx";
 import Profile from "./pages/Profile.jsx";
 import Admin from "./pages/Admin.jsx";
+import CampaignNotes from "./pages/CampaignNotes.jsx";
 
 export default function App() {
   return (
@@ -51,6 +52,14 @@ export default function App() {
             element={
               <AuthGuard>
                 <Profile />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/campaigns/:id/notes"
+            element={
+              <AuthGuard>
+                <CampaignNotes />
               </AuthGuard>
             }
           />

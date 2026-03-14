@@ -25,8 +25,8 @@ from app.schemas.campaign import (
     MemberResponse,
     MemberUpdate,
 )
-from app.schemas.session import SessionListItem
-from app.services import campaign_service, session_service
+from app.schemas.session import CampaignNoteEntry, SessionListItem
+from app.services import campaign_service, session_note_service, session_service
 
 router = APIRouter()
 
@@ -184,3 +184,22 @@ async def get_next_session(
 ) -> SessionListItem | None:
     """Return the next upcoming confirmed session for this campaign, or null."""
     return await session_service.get_next_confirmed_session(db, campaign_id)
+
+
+@router.get(
+    "/{campaign_id}/my-notes",
+    response_model=list[CampaignNoteEntry],
+)
+async def get_campaign_notes(
+    campaign_id: uuid.UUID,
+    current_user: User = Depends(require_campaign_member),
+    db: AsyncSession = Depends(get_db),
+) -> list[CampaignNoteEntry]:
+    """Return the current user's aggregated session journal for this campaign.
+
+    Includes the user's own notes (any visibility) and public GM notes,
+    ordered chronologically by session time.
+    """
+    return await session_note_service.get_campaign_notes(
+        db, current_user.id, campaign_id
+    )

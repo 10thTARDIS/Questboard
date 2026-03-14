@@ -1,5 +1,6 @@
 Things that still need doing:
 
+# Version 1.0
 [x] When pasting an invite code, you should be able to hit enter and have it accept it.  Right now it's an extra click.
 [x] Add ability to edit sessions (change time, reschedule, rename, or delete)
 [x] Define timezone for campaign scheduling
@@ -22,3 +23,18 @@ Still outstanding / partial:
 [] Attendance tracking per session (who showed up)
 [] Aggregated per-campaign notes view (combining all per-session notes for a user)
 [] Admin: view which campaigns a user belongs to, session attendance history
+
+# Version 2.0
+### Reaction-Based Voting via Bot
+- Users link their Discord (or Matrix) account ID in profile settings
+  (stored as `platform_links` table: user_id, platform ENUM, platform_user_id)
+- When a vote notification is posted, bot adds one reaction emoji per time slot
+- Bot watches for reactions from users with linked accounts and writes votes
+  back to the existing Votes API
+- Users without linked accounts see a prompt when they react
+
+### Session Recording & Transcription
+- Discord bot joins voice channel on session start (opt-in, consent required)
+- Audio sent to self-hosted OpenAI Whisper for transcription
+- Transcript passed to LLM (Ollama or API) for session summary
+- Transcript and summary stored on Session record, displayed in session detail page

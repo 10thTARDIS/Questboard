@@ -65,3 +65,6 @@ export const removeMember = (campaignId, userId) =>
 
 export const fetchNextSession = (campaignId) =>
   request(`${BASE}/${campaignId}/next-session`);
+
+export const fetchCampaignNotes = (campaignId) =>
+  request(`${BASE}/${campaignId}/my-notes`);

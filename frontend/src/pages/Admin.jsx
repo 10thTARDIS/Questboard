@@ -1,14 +1,23 @@
 /**
  * Admin — site administration panel.
  *
- * Lists all registered users with last-login dates and lets admins
- * grant or revoke admin status.  Only accessible to users with is_admin=true.
+ * Sections:
+ *  1. Users — list all users with last-login, expandable rows showing
+ *             campaign memberships and attendance stats.
+ *  2. Notification Settings — configure global Discord webhook fallback
+ *             and SMTP for email notifications.
  */
 
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { fetchAdminUsers, setAdminStatus } from "../api/auth.js";
+import {
+  fetchAdminUserDetail,
+  fetchNotificationSettings,
+  saveNotificationSettings,
+  sendTestEmail,
+} from "../api/sessions.js";
 
 function fmt(iso) {
   if (!iso) return "Never";
@@ -18,6 +27,251 @@ function fmt(iso) {
   });
 }
 
+// ── User drill-down row ────────────────────────────────────────────────────────
+
+function UserDetailPanel({ userId }) {
+  const [detail, setDetail] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchAdminUserDetail(userId)
+      .then(setDetail)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [userId]);
+
+  if (loading) return <p className="text-xs text-gray-500 py-2">Loading…</p>;
+  if (error) return <p className="text-xs text-red-400 py-2">{error}</p>;
+  if (!detail || detail.campaigns.length === 0) {
+    return <p className="text-xs text-gray-600 py-2">No campaign memberships.</p>;
+  }
+
+  return (
+    <table className="w-full text-xs mt-2">
+      <thead>
+        <tr className="text-left text-gray-500 border-b border-gray-700">
+          <th className="py-1 pr-4 font-medium">Campaign</th>
+          <th className="py-1 pr-4 font-medium">Role</th>
+          <th className="py-1 pr-4 font-medium">Joined</th>
+          <th className="py-1 font-medium">Attendance</th>
+        </tr>
+      </thead>
+      <tbody>
+        {detail.campaigns.map((c) => (
+          <tr key={c.campaign_id} className="border-b border-gray-800/50">
+            <td className="py-1.5 pr-4 text-gray-300">{c.campaign_name}</td>
+            <td className="py-1.5 pr-4 text-gray-400 capitalize">{c.role}</td>
+            <td className="py-1.5 pr-4 text-gray-500">{fmt(c.joined_at)}</td>
+            <td className="py-1.5 text-gray-400">
+              {c.attended_count}/{c.session_count}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+// ── Notification settings section ─────────────────────────────────────────────
+
+function NotificationSettings() {
+  const [settings, setSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [testBusy, setTestBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  const [smtpForm, setSmtpForm] = useState({
+    host: "", port: 587, username: "", password: "", from_address: "", use_tls: true,
+  });
+  const [webhookUrl, setWebhookUrl] = useState("");
+
+  useEffect(() => {
+    fetchNotificationSettings()
+      .then((s) => {
+        setSettings(s);
+        setSmtpForm({
+          host: s.smtp.host || "",
+          port: s.smtp.port || 587,
+          username: s.smtp.username || "",
+          password: "",  // never pre-filled
+          from_address: s.smtp.from_address || "",
+          use_tls: s.smtp.use_tls !== false,
+        });
+        setWebhookUrl(s.discord_webhook_url || "");
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const updated = await saveNotificationSettings({
+        smtp: smtpForm,
+        discord_webhook_url: webhookUrl || null,
+      });
+      setSettings(updated);
+      setSuccess("Settings saved.");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleTestEmail = async () => {
+    setTestBusy(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      await sendTestEmail();
+      setSuccess("Test email queued — check your inbox.");
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setTestBusy(false);
+    }
+  };
+
+  if (loading) return <p className="text-sm text-gray-500">Loading settings…</p>;
+
+  return (
+    <form onSubmit={handleSave} className="space-y-6">
+      {error && (
+        <p className="rounded-lg bg-red-900/40 border border-red-800 px-4 py-2 text-sm text-red-300">
+          {error}
+        </p>
+      )}
+      {success && (
+        <p className="rounded-lg bg-green-900/30 border border-green-800 px-4 py-2 text-sm text-green-300">
+          {success}
+        </p>
+      )}
+
+      {/* Discord webhook */}
+      <div>
+        <label className="block text-xs font-medium text-gray-400 mb-1.5">
+          Global Discord Webhook URL (fallback for campaigns without a webhook set)
+        </label>
+        <input
+          type="url"
+          value={webhookUrl}
+          onChange={(e) => setWebhookUrl(e.target.value)}
+          placeholder="https://discord.com/api/webhooks/…"
+          className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+
+      {/* SMTP */}
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+          SMTP (Email Notifications)
+          {settings?.smtp?.configured && (
+            <span className="ml-2 rounded-full bg-green-900/50 text-green-400 px-2 py-0.5 normal-case font-normal">
+              Configured
+            </span>
+          )}
+        </p>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Host</label>
+            <input
+              type="text"
+              value={smtpForm.host}
+              onChange={(e) => setSmtpForm((f) => ({ ...f, host: e.target.value }))}
+              placeholder="smtp.example.com"
+              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Port</label>
+            <input
+              type="number"
+              value={smtpForm.port}
+              onChange={(e) => setSmtpForm((f) => ({ ...f, port: parseInt(e.target.value) || 587 }))}
+              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Username</label>
+            <input
+              type="text"
+              value={smtpForm.username}
+              onChange={(e) => setSmtpForm((f) => ({ ...f, username: e.target.value }))}
+              autoComplete="off"
+              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">
+              Password {settings?.smtp?.configured && <span className="text-gray-600">(leave blank to keep current)</span>}
+            </label>
+            <input
+              type="password"
+              value={smtpForm.password}
+              onChange={(e) => setSmtpForm((f) => ({ ...f, password: e.target.value }))}
+              autoComplete="new-password"
+              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-xs text-gray-500 mb-1">From Address</label>
+            <input
+              type="email"
+              value={smtpForm.from_address}
+              onChange={(e) => setSmtpForm((f) => ({ ...f, from_address: e.target.value }))}
+              placeholder="questboard@example.com"
+              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={smtpForm.use_tls}
+            onChange={(e) => setSmtpForm((f) => ({ ...f, use_tls: e.target.checked }))}
+            className="accent-indigo-500"
+          />
+          <span className="text-xs text-gray-400">Use STARTTLS</span>
+        </label>
+
+        {settings?.smtp?.configured && (
+          <div>
+            <button
+              type="button"
+              onClick={handleTestEmail}
+              disabled={testBusy}
+              className="text-xs text-indigo-400 hover:text-indigo-300 transition disabled:opacity-50"
+            >
+              {testBusy ? "Sending…" : "Send test email to my address"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
+        >
+          {saving ? "Saving…" : "Save Settings"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+// ── Main Admin page ────────────────────────────────────────────────────────────
+
 export default function Admin() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -26,6 +280,8 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [actionError, setActionError] = useState(null);
+  const [expandedUser, setExpandedUser] = useState(null);
+  const [activeTab, setActiveTab] = useState("users"); // "users" | "settings"
 
   // Redirect non-admins
   useEffect(() => {
@@ -52,6 +308,10 @@ export default function Admin() {
     }
   };
 
+  const toggleExpand = (userId) => {
+    setExpandedUser((prev) => (prev === userId ? null : userId));
+  };
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <header className="border-b border-gray-800 px-6 py-4 flex items-center gap-4">
@@ -63,67 +323,114 @@ export default function Admin() {
       </header>
 
       <main className="mx-auto max-w-4xl px-6 py-8">
-        <h2 className="text-lg font-bold mb-6">Users</h2>
+        {/* Tabs */}
+        <div className="flex gap-1 mb-6 border-b border-gray-800">
+          {[["users", "Users"], ["settings", "Notification Settings"]].map(([key, label]) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`px-4 py-2 text-sm font-medium transition border-b-2 -mb-px ${
+                activeTab === key
+                  ? "border-indigo-500 text-white"
+                  : "border-transparent text-gray-500 hover:text-gray-300"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
 
-        {actionError && (
-          <p className="mb-4 rounded-lg bg-red-900/40 border border-red-800 px-4 py-2 text-sm text-red-300">
-            {actionError}
-          </p>
+        {/* Users tab */}
+        {activeTab === "users" && (
+          <>
+            {actionError && (
+              <p className="mb-4 rounded-lg bg-red-900/40 border border-red-800 px-4 py-2 text-sm text-red-300">
+                {actionError}
+              </p>
+            )}
+
+            {loading && <p className="text-gray-500 text-sm">Loading users…</p>}
+            {error && <p className="text-red-400 text-sm">{error}</p>}
+
+            {!loading && !error && (
+              <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-800 text-left text-gray-400 text-xs">
+                      <th className="px-4 py-3 font-medium">Name</th>
+                      <th className="px-4 py-3 font-medium">Email</th>
+                      <th className="px-4 py-3 font-medium">Last login</th>
+                      <th className="px-4 py-3 font-medium">Joined</th>
+                      <th className="px-4 py-3 font-medium">Role</th>
+                      <th className="px-4 py-3 font-medium"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <>
+                        <tr
+                          key={u.id}
+                          className="border-b border-gray-800/50 hover:bg-gray-800/30 cursor-pointer"
+                          onClick={() => toggleExpand(u.id)}
+                        >
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-gray-500 text-xs select-none">
+                                {expandedUser === u.id ? "▾" : "▸"}
+                              </span>
+                              <div>
+                                <div className="font-medium">{u.effective_display_name}</div>
+                                {u.display_name_override && (
+                                  <div className="text-xs text-gray-500">{u.display_name}</div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-gray-400">{u.email ?? "—"}</td>
+                          <td className="px-4 py-3 text-gray-400">{fmt(u.last_login_at)}</td>
+                          <td className="px-4 py-3 text-gray-400">{fmt(u.created_at)}</td>
+                          <td className="px-4 py-3">
+                            {u.is_admin ? (
+                              <span className="rounded-full bg-amber-900/50 text-amber-300 px-2 py-0.5 text-xs font-medium">Admin</span>
+                            ) : (
+                              <span className="rounded-full bg-gray-800 text-gray-400 px-2 py-0.5 text-xs font-medium">User</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                            {u.id !== user?.id && (
+                              <button
+                                onClick={() => handleToggleAdmin(u)}
+                                className={`text-xs transition ${
+                                  u.is_admin
+                                    ? "text-red-400 hover:text-red-300"
+                                    : "text-indigo-400 hover:text-indigo-300"
+                                }`}
+                              >
+                                {u.is_admin ? "Revoke admin" : "Make admin"}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                        {expandedUser === u.id && (
+                          <tr key={`${u.id}-detail`} className="bg-gray-900/50 border-b border-gray-800/50">
+                            <td colSpan={6} className="px-8 py-3">
+                              <UserDetailPanel userId={u.id} />
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         )}
 
-        {loading && <p className="text-gray-500 text-sm">Loading users…</p>}
-        {error && <p className="text-red-400 text-sm">{error}</p>}
-
-        {!loading && !error && (
-          <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-800 text-left text-gray-400 text-xs">
-                  <th className="px-4 py-3 font-medium">Name</th>
-                  <th className="px-4 py-3 font-medium">Email</th>
-                  <th className="px-4 py-3 font-medium">Last login</th>
-                  <th className="px-4 py-3 font-medium">Joined</th>
-                  <th className="px-4 py-3 font-medium">Role</th>
-                  <th className="px-4 py-3 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => (
-                  <tr key={u.id} className="border-b border-gray-800/50 hover:bg-gray-800/30">
-                    <td className="px-4 py-3">
-                      <div className="font-medium">{u.effective_display_name}</div>
-                      {u.display_name_override && (
-                        <div className="text-xs text-gray-500">{u.display_name}</div>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-gray-400">{u.email ?? "—"}</td>
-                    <td className="px-4 py-3 text-gray-400">{fmt(u.last_login_at)}</td>
-                    <td className="px-4 py-3 text-gray-400">{fmt(u.created_at)}</td>
-                    <td className="px-4 py-3">
-                      {u.is_admin ? (
-                        <span className="rounded-full bg-amber-900/50 text-amber-300 px-2 py-0.5 text-xs font-medium">Admin</span>
-                      ) : (
-                        <span className="rounded-full bg-gray-800 text-gray-400 px-2 py-0.5 text-xs font-medium">User</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      {u.id !== user?.id && (
-                        <button
-                          onClick={() => handleToggleAdmin(u)}
-                          className={`text-xs transition ${
-                            u.is_admin
-                              ? "text-red-400 hover:text-red-300"
-                              : "text-indigo-400 hover:text-indigo-300"
-                          }`}
-                        >
-                          {u.is_admin ? "Revoke admin" : "Make admin"}
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Notification settings tab */}
+        {activeTab === "settings" && (
+          <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+            <NotificationSettings />
           </div>
         )}
       </main>

@@ -20,6 +20,8 @@ from app.database import get_db
 from app.models.session import Session
 from app.models.user import User
 from app.schemas.session import (
+    AttendanceEntry,
+    AttendanceUpsert,
     ConfirmRequest,
     SessionCreate,
     SessionListItem,
@@ -28,7 +30,7 @@ from app.schemas.session import (
     SessionResponse,
     SessionUpdate,
 )
-from app.services import session_note_service, session_service
+from app.services import attendance_service, session_note_service, session_service
 
 router = APIRouter()
 
@@ -140,10 +142,95 @@ async def upsert_my_note(
     session_id: uuid.UUID,
     data: SessionNoteUpsert,
     current_user: User = Depends(get_current_user),
-    _: Session = Depends(get_session_for_member),
+    session: Session = Depends(get_session_for_member),
     db: AsyncSession = Depends(get_db),
 ) -> SessionNoteResponse:
-    """Create or update the current user's private note for this session."""
+    """Create or update the current user's note for this session.
+
+    Players can only save private notes.  GMs may also set visibility=public
+    to share notes with all campaign members in the aggregated journal view.
+    """
+    from app.models.campaign import CampaignMember, MemberRole
+    from app.models.session_note import NoteVisibility
+    from sqlalchemy import select
+
+    # Only GMs are allowed to create public notes
+    visibility = data.visibility
+    if visibility == NoteVisibility.public:
+        member = await db.scalar(
+            select(CampaignMember).where(
+                CampaignMember.campaign_id == session.campaign_id,
+                CampaignMember.user_id == current_user.id,
+                CampaignMember.role == MemberRole.gm,
+            )
+        )
+        if not member:
+            visibility = NoteVisibility.private
+
     return await session_note_service.upsert_note(
-        db, session_id, current_user.id, data.content
+        db, session_id, current_user.id, data.content, visibility
+    )
+
+
+# ── Attendance ─────────────────────────────────────────────────────────────────
+
+@router.get(
+    "/sessions/{session_id}/attendance",
+    response_model=list[AttendanceEntry],
+)
+async def get_attendance(
+    session_id: uuid.UUID,
+    session: Session = Depends(get_session_for_member),
+    db: AsyncSession = Depends(get_db),
+) -> list[AttendanceEntry]:
+    """Return attendance status for all campaign members (any member can view)."""
+    return await attendance_service.get_session_attendance(
+        db, session_id, session.campaign_id
+    )
+
+
+@router.put(
+    "/sessions/{session_id}/attendance/{user_id}",
+    response_model=AttendanceEntry,
+)
+async def set_attendance(
+    session_id: uuid.UUID,
+    user_id: uuid.UUID,
+    data: AttendanceUpsert,
+    session: Session = Depends(get_session_for_gm),
+    db: AsyncSession = Depends(get_db),
+) -> AttendanceEntry:
+    """Mark a member as attended or not attended (GM only).
+
+    In v2.0 the Discord recording bot will call this same endpoint to
+    auto-set attendance when it detects users joining a voice channel.
+    """
+    from app.models.campaign import CampaignMember
+    from sqlalchemy import select
+
+    # Verify the target user is a campaign member
+    member = await db.scalar(
+        select(CampaignMember).where(
+            CampaignMember.campaign_id == session.campaign_id,
+            CampaignMember.user_id == user_id,
+        )
+    )
+    if not member:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User is not a member of this campaign",
+        )
+
+    record = await attendance_service.upsert_attendance(
+        db, session_id, user_id, data.attended
+    )
+
+    # Fetch display name for response
+    from app.models.user import User as UserModel
+    from sqlalchemy import select as sel
+    u = await db.scalar(sel(UserModel).where(UserModel.id == user_id))
+    return AttendanceEntry(
+        user_id=user_id,
+        display_name=u.effective_display_name if u else str(user_id),
+        attended=record.attended,
     )

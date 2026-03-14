@@ -79,6 +79,14 @@ class Session(Base):
     # reschedule or cancellation.  Schema: ["task_id_7d", "task_id_24h", "task_id_1h"]
     celery_task_ids: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
+    # v2.0 transcription fields — populated by the recording bot; null in v1.0
+    recording_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    transcript: Mapped[str | None] = mapped_column(Text, nullable=True)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    transcript_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
     # ── Relationships ──────────────────────────────────────────────────────────
     campaign: Mapped["Campaign"] = relationship(  # noqa: F821
         back_populates="sessions"
@@ -90,5 +98,8 @@ class Session(Base):
         back_populates="session", cascade="all, delete-orphan"
     )
     notes: Mapped[list["SessionNote"]] = relationship(  # noqa: F821
+        back_populates="session", cascade="all, delete-orphan"
+    )
+    attendance: Mapped[list["SessionAttendance"]] = relationship(  # noqa: F821
         back_populates="session", cascade="all, delete-orphan"
     )

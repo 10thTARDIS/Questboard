@@ -10,3 +10,6 @@ from app.models.session import Session as Session  # noqa: F401
 from app.models.timeslot import TimeSlot as TimeSlot  # noqa: F401
 from app.models.vote import Vote as Vote  # noqa: F401
 from app.models.session_note import SessionNote as SessionNote  # noqa: F401
+from app.models.session_attendance import SessionAttendance as SessionAttendance  # noqa: F401
+from app.models.platform_link import PlatformLink as PlatformLink  # noqa: F401
+from app.models.app_setting import AppSetting as AppSetting  # noqa: F401

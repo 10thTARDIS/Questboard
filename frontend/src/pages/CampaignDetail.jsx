@@ -507,6 +507,13 @@ export default function CampaignDetail() {
             <h3 className="text-sm font-medium text-gray-400">
               Sessions ({sessions.length})
             </h3>
+            <div className="flex items-center gap-3">
+              <Link
+                to={`/campaigns/${id}/notes`}
+                className="text-xs text-indigo-400 hover:text-indigo-300 transition"
+              >
+                Campaign Journal
+              </Link>
             {isGm && (
               <button
                 onClick={() => setShowNewSession((v) => !v)}
@@ -515,6 +522,7 @@ export default function CampaignDetail() {
                 {showNewSession ? "Cancel" : "+ New Session"}
               </button>
             )}
+            </div>
           </div>
 
           {/* New-session form */}

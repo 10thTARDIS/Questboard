@@ -64,3 +64,9 @@ class User(Base):
     session_notes: Mapped[list["SessionNote"]] = relationship(  # noqa: F821
         back_populates="user", cascade="all, delete-orphan"
     )
+    attendance_records: Mapped[list["SessionAttendance"]] = relationship(  # noqa: F821
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    platform_links: Mapped[list["PlatformLink"]] = relationship(  # noqa: F821
+        back_populates="user", cascade="all, delete-orphan"
+    )

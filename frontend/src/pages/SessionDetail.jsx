@@ -21,9 +21,11 @@ import { fetchMembers } from "../api/campaigns.js";
 import {
   cancelSession,
   confirmSession,
+  fetchAttendance,
   fetchMyNote,
   fetchSession,
   fetchVotes,
+  setAttendance,
   updateSession,
   upsertMyNote,
 } from "../api/sessions.js";
@@ -79,7 +81,12 @@ export default function SessionDetail() {
   const [myNote, setMyNote] = useState(null);
   const [editingMyNote, setEditingMyNote] = useState(false);
   const [myNoteInput, setMyNoteInput] = useState("");
+  const [myNoteVisibility, setMyNoteVisibility] = useState("private");
   const [savingMyNote, setSavingMyNote] = useState(false);
+
+  // Attendance (completed sessions, GM only)
+  const [attendance, setAttendance] = useState([]);
+  const [attendanceBusy, setAttendanceBusy] = useState(null); // user_id being updated
 
   const isGm = members.some((m) => m.user_id === user?.id && m.role === "gm");
 
@@ -96,6 +103,11 @@ export default function SessionDetail() {
         setVotes(v);
         setMyNote(note);
         setMyNoteInput(note?.content ?? "");
+        setMyNoteVisibility(note?.visibility ?? "private");
+        return fetchAttendance(id).catch(() => []);
+      })
+      .then((att) => {
+        setAttendance(att ?? []);
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -176,13 +188,27 @@ export default function SessionDetail() {
     e.preventDefault();
     setSavingMyNote(true);
     try {
-      const saved = await upsertMyNote(id, myNoteInput);
+      const saved = await upsertMyNote(id, myNoteInput, myNoteVisibility);
       setMyNote(saved);
       setEditingMyNote(false);
     } catch (e) {
       setActionError(e.message);
     } finally {
       setSavingMyNote(false);
+    }
+  };
+
+  const handleToggleAttendance = async (userId, currentAttended) => {
+    setAttendanceBusy(userId);
+    try {
+      const updated = await setAttendance(id, userId, !currentAttended);
+      setAttendance((prev) =>
+        prev.map((a) => (a.user_id === userId ? { ...a, attended: updated.attended } : a))
+      );
+    } catch (e) {
+      setActionError(e.message);
+    } finally {
+      setAttendanceBusy(null);
     }
   };
 
@@ -441,10 +467,21 @@ export default function SessionDetail() {
           )}
         </section>
 
-        {/* Per-user private note */}
+        {/* Per-user note */}
         <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-400">My Notes (private)</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-medium text-gray-400">My Notes</h3>
+              {myNote && (
+                <span className={`text-xs rounded-full px-2 py-0.5 ${
+                  myNote.visibility === "public"
+                    ? "bg-amber-900/50 text-amber-300"
+                    : "bg-gray-800 text-gray-500"
+                }`}>
+                  {myNote.visibility === "public" ? "Public" : "Private"}
+                </span>
+              )}
+            </div>
             {!editingMyNote && (
               <button
                 onClick={() => setEditingMyNote(true)}
@@ -461,13 +498,44 @@ export default function SessionDetail() {
                 rows={4}
                 value={myNoteInput}
                 onChange={(e) => setMyNoteInput(e.target.value)}
-                placeholder="Your private notes for this session…"
+                placeholder="Your notes for this session…"
                 className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
               />
+              {isGm && (
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-500">Visibility:</span>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value="private"
+                      checked={myNoteVisibility === "private"}
+                      onChange={() => setMyNoteVisibility("private")}
+                      className="accent-indigo-500"
+                    />
+                    <span className="text-xs text-gray-400">Private</span>
+                  </label>
+                  <label className="flex items-center gap-1.5 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value="public"
+                      checked={myNoteVisibility === "public"}
+                      onChange={() => setMyNoteVisibility("public")}
+                      className="accent-amber-500"
+                    />
+                    <span className="text-xs text-amber-400">Public (shared with players)</span>
+                  </label>
+                </div>
+              )}
               <div className="flex gap-2 justify-end">
                 <button
                   type="button"
-                  onClick={() => { setEditingMyNote(false); setMyNoteInput(myNote?.content ?? ""); }}
+                  onClick={() => {
+                    setEditingMyNote(false);
+                    setMyNoteInput(myNote?.content ?? "");
+                    setMyNoteVisibility(myNote?.visibility ?? "private");
+                  }}
                   className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs hover:border-gray-500 transition"
                 >
                   Cancel
@@ -484,9 +552,38 @@ export default function SessionDetail() {
           ) : myNote?.content ? (
             <p className="text-sm text-gray-300 whitespace-pre-wrap">{myNote.content}</p>
           ) : (
-            <p className="text-sm text-gray-600">No private notes yet.</p>
+            <p className="text-sm text-gray-600">No notes yet.</p>
           )}
         </section>
+
+        {/* Attendance — completed sessions, GM view */}
+        {session.status === "completed" && isGm && (
+          <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
+            <h3 className="text-sm font-medium text-gray-400 mb-4">Attendance</h3>
+            {attendance.length === 0 ? (
+              <p className="text-sm text-gray-600">No members found.</p>
+            ) : (
+              <ul className="space-y-2">
+                {attendance.map((a) => (
+                  <li key={a.user_id} className="flex items-center justify-between">
+                    <span className="text-sm text-gray-300">{a.display_name}</span>
+                    <button
+                      onClick={() => handleToggleAttendance(a.user_id, a.attended)}
+                      disabled={attendanceBusy === a.user_id}
+                      className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition ${
+                        a.attended
+                          ? "bg-green-900/50 text-green-300 hover:bg-green-900"
+                          : "bg-gray-800 text-gray-500 hover:bg-gray-700 hover:text-gray-300"
+                      } disabled:opacity-50`}
+                    >
+                      {attendanceBusy === a.user_id ? "…" : a.attended ? "✓ Attended" : "Absent"}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
       </main>
     </div>
   );

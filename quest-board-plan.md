@@ -405,7 +405,7 @@ Work through these phases in order. Complete and verify each before starting the
 
 ---
 
-## Phase 2 Features (Design Now, Build Later)
+## Version 2 Features (Design Now, Build Later)
 
 ### Reaction-Based Voting via Bot
 - Users link their Discord (or Matrix) account ID in profile settings

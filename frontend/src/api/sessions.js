@@ -86,8 +86,36 @@ export const deleteVote = (sessionId, slotId) =>
 export const fetchMyNote = (sessionId) =>
   request(`/api/sessions/${sessionId}/my-note`);
 
-export const upsertMyNote = (sessionId, content) =>
+export const upsertMyNote = (sessionId, content, visibility = "private") =>
   request(`/api/sessions/${sessionId}/my-note`, {
     method: "PUT",
-    body: JSON.stringify({ content }),
+    body: JSON.stringify({ content, visibility }),
   });
+
+// ── Attendance ──────────────────────────────────────────────────────────────────
+
+export const fetchAttendance = (sessionId) =>
+  request(`/api/sessions/${sessionId}/attendance`);
+
+export const setAttendance = (sessionId, userId, attended) =>
+  request(`/api/sessions/${sessionId}/attendance/${userId}`, {
+    method: "PUT",
+    body: JSON.stringify({ attended }),
+  });
+
+// ── Admin ───────────────────────────────────────────────────────────────────────
+
+export const fetchAdminUserDetail = (userId) =>
+  request(`/api/admin/users/${userId}/details`);
+
+export const fetchNotificationSettings = () =>
+  request("/api/admin/settings/notifications");
+
+export const saveNotificationSettings = (data) =>
+  request("/api/admin/settings/notifications", {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+
+export const sendTestEmail = () =>
+  request("/api/admin/settings/notifications/test-email", { method: "POST" });

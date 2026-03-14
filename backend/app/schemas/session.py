@@ -4,6 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, model_validator
 
 from app.models.session import SchedulingMode, SessionStatus
+from app.models.session_note import NoteVisibility
 
 
 # ── Timeslot ──────────────────────────────────────────────────────────────────
@@ -86,6 +87,11 @@ class SessionResponse(BaseModel):
     created_by: uuid.UUID
     created_at: datetime
     time_slots: list[TimeSlotResponse]
+    # v2.0 transcription fields — null until the recording bot populates them
+    recording_url: str | None = None
+    transcript: str | None = None
+    summary: str | None = None
+    transcript_updated_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -94,6 +100,7 @@ class SessionResponse(BaseModel):
 
 class SessionNoteUpsert(BaseModel):
     content: str
+    visibility: NoteVisibility = NoteVisibility.private
 
 
 class SessionNoteResponse(BaseModel):
@@ -101,7 +108,34 @@ class SessionNoteResponse(BaseModel):
     session_id: uuid.UUID
     user_id: uuid.UUID
     content: str
+    visibility: NoteVisibility
     created_at: datetime
     updated_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ── Attendance ──────────────────────────────────────────────────────────────────
+
+class AttendanceEntry(BaseModel):
+    user_id: uuid.UUID
+    display_name: str
+    attended: bool
+
+    model_config = {"from_attributes": True}
+
+
+class AttendanceUpsert(BaseModel):
+    attended: bool
+
+
+# ── Campaign notes (aggregated journal) ────────────────────────────────────────
+
+class CampaignNoteEntry(BaseModel):
+    session_id: uuid.UUID
+    session_title: str | None
+    confirmed_time: datetime | None
+    my_note: str | None
+    gm_public_note: str | None
 
     model_config = {"from_attributes": True}
