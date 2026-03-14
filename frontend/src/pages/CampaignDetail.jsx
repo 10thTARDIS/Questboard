@@ -44,6 +44,24 @@ const MODE_LABELS = {
   tentative: "Tentative",
 };
 
+const UNITS = ["minutes", "hours", "days"];
+const UNIT_MULTIPLIER = { minutes: 1, hours: 60, days: 1440 };
+
+/** Convert a stored minutes value to the most readable {value, unit} pair. */
+function minutesToReminder(minutes) {
+  if (minutes % 1440 === 0) return { value: minutes / 1440, unit: "days" };
+  if (minutes % 60 === 0) return { value: minutes / 60, unit: "hours" };
+  return { value: minutes, unit: "minutes" };
+}
+
+/** Convert up to 3 {value, unit} rows back to a sorted array of minutes. */
+function remindersToMinutes(rows) {
+  return rows
+    .map((r) => Math.round(Number(r.value) * UNIT_MULTIPLIER[r.unit]))
+    .filter((n) => n > 0)
+    .sort((a, b) => b - a); // descending (7d, 24h, 1h)
+}
+
 function fmt(iso) {
   return new Date(iso).toLocaleString(undefined, {
     weekday: "short", month: "short", day: "numeric",
@@ -103,7 +121,7 @@ export default function CampaignDetail() {
           description: c.description ?? "",
           discord_webhook_url: c.discord_webhook_url ?? "",
           timezone: c.timezone ?? "",
-          reminder_offsets_minutes: (c.reminder_offsets_minutes ?? []).join(", "),
+          reminders: (c.reminder_offsets_minutes ?? []).map(minutesToReminder),
         });
         const myMember = m.find((mem) => mem.user_id === user?.id);
         setCharNameInput(myMember?.character_name ?? "");
@@ -117,22 +135,14 @@ export default function CampaignDetail() {
     setSaving(true);
     setEditError(null);
     try {
-      // Parse reminder_offsets_minutes from comma-separated string
-      let reminders = null;
-      if (editForm.reminder_offsets_minutes.trim()) {
-        reminders = editForm.reminder_offsets_minutes
-          .split(",")
-          .map((s) => parseInt(s.trim(), 10))
-          .filter((n) => !isNaN(n) && n > 0);
-        if (reminders.length === 0) reminders = null;
-      }
+      const minutesList = remindersToMinutes(editForm.reminders);
       const updated = await updateCampaign(id, {
         name: editForm.name,
         game_system: editForm.game_system || null,
         description: editForm.description || null,
         discord_webhook_url: editForm.discord_webhook_url || null,
         timezone: editForm.timezone || null,
-        reminder_offsets_minutes: reminders,
+        reminder_offsets_minutes: minutesList.length > 0 ? minutesList : null,
       });
       setCampaign(updated);
       setEditing(false);
@@ -360,16 +370,67 @@ export default function CampaignDetail() {
               </div>
               <div>
                 <label className="text-xs text-gray-400 block mb-1">
-                  Reminder offsets (minutes before session, comma-separated)
+                  Reminders (up to 3, sent before the session)
                 </label>
-                <input
-                  placeholder="e.g. 10080, 1440, 60 (= 7d, 24h, 1h)"
-                  value={editForm.reminder_offsets_minutes}
-                  onChange={(e) =>
-                    setEditForm((f) => ({ ...f, reminder_offsets_minutes: e.target.value }))
-                  }
-                  className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
+                <div className="space-y-2">
+                  {editForm.reminders.map((r, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min="1"
+                        value={r.value}
+                        onChange={(e) =>
+                          setEditForm((f) => {
+                            const rows = [...f.reminders];
+                            rows[i] = { ...rows[i], value: e.target.value };
+                            return { ...f, reminders: rows };
+                          })
+                        }
+                        className="w-24 rounded-lg bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <select
+                        value={r.unit}
+                        onChange={(e) =>
+                          setEditForm((f) => {
+                            const rows = [...f.reminders];
+                            rows[i] = { ...rows[i], unit: e.target.value };
+                            return { ...f, reminders: rows };
+                          })
+                        }
+                        className="rounded-lg bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                      </select>
+                      <span className="text-xs text-gray-500">before session</span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditForm((f) => ({
+                            ...f,
+                            reminders: f.reminders.filter((_, j) => j !== i),
+                          }))
+                        }
+                        className="text-gray-600 hover:text-red-400 transition text-sm"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  {editForm.reminders.length < 3 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setEditForm((f) => ({
+                          ...f,
+                          reminders: [...f.reminders, { value: 1, unit: "hours" }],
+                        }))
+                      }
+                      className="text-xs text-indigo-400 hover:text-indigo-300 transition"
+                    >
+                      + Add reminder
+                    </button>
+                  )}
+                </div>
               </div>
               {editError && <p className="text-sm text-red-400">{editError}</p>}
               <div className="flex gap-2 justify-end">
