@@ -39,7 +39,7 @@ services:
       target: production
     volumes: []
     ports:
-      - "80:80"
+      - "${HTTP_PORT:-80}:80"
     restart: unless-stopped
     # Nginx serves built assets and proxies /api → backend:8000
-    # The dev port 5173 binding is replaced by 80 above
+    # The dev port 5173 binding is replaced by HTTP_PORT (default 80) above

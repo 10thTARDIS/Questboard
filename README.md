@@ -28,6 +28,8 @@ This project has been created with the assistance of Claude Code, which is an AI
 
 ## Quick Start (Development)
 
+> **Going straight to production?** The Development and Production sections below are independent — you do not need to run the development stack first.
+
 ### 1. Clone and configure
 
 ```bash
@@ -55,10 +57,10 @@ Edit `.env` — the minimum required fields are:
 docker compose up --build
 ```
 
-Services:
-- **Frontend** → http://localhost:5173
-- **Backend API** → http://localhost:8000
-- **API docs** → http://localhost:8000/docs
+Services (default ports — override in `.env` if needed):
+- **Frontend** → http://localhost:`$FRONTEND_PORT` (default 5173)
+- **Backend API** → http://localhost:`$BACKEND_PORT` (default 8000)
+- **API docs** → http://localhost:`$BACKEND_PORT`/docs
 
 ### 3. Run database migrations
 
@@ -76,9 +78,20 @@ Navigate to http://localhost:5173 and click **Sign in with SSO**. If `INVITE_COD
 
 ## Production Deployment
 
-### 1. Configure environment
+### 1. Clone and configure
 
-Copy `.env.example` to `.env` on your server and fill in all values with real secrets. Set `APP_URL` to your public domain (e.g. `https://questboard.example.com`).
+```bash
+git clone https://github.com/10thTARDIS/Questboard quest-board
+cd quest-board
+cp .env.example .env
+```
+
+Edit `.env` with real secrets and your public domain. Key changes from the development defaults:
+
+- Set `APP_URL` to your public URL (e.g. `https://questboard.example.com`)
+- Set `OIDC_REDIRECT_URI` to `https://questboard.example.com/auth/callback`
+- Use strong, unique values for `SECRET_KEY`, `POSTGRES_PASSWORD`, and `POSTGRES_MIGRATE_PASSWORD`
+- Update `DATABASE_URL` and `DATABASE_MIGRATE_URL` to match
 
 ### 2. Start with production overrides
 
@@ -88,19 +101,19 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 This uses the production Docker targets (pre-built assets, no bind mounts, `restart: unless-stopped`).
 
-### 3. Reverse proxy
-
-TLS termination is handled externally. Point your reverse proxy (Caddy, Nginx, Traefik) at:
-- Port **5173** (or the frontend container) for the SPA
-- Port **8000** for `/api/*` and `/auth/*`
-
-Or use the Nginx container in production mode, which serves the built SPA and proxies API traffic internally.
-
-### 4. Run migrations
+### 3. Run migrations
 
 ```bash
 docker compose exec backend alembic upgrade head
 ```
+
+### 4. Reverse proxy
+
+TLS termination is handled externally. Point your reverse proxy (Caddy, Nginx, Traefik) at the single frontend container port (`HTTP_PORT`, default **80**). The Nginx container in production mode serves the React single-page application (SPA) and automatically proxies all `/api/*` and `/auth/*` traffic to the backend internally — your reverse proxy only needs to talk to one port.
+
+### 5. Done — verify
+
+Navigate to your public URL and sign in. If `INVITE_CODE` is set, the first user must supply it during registration.
 
 ---
 
@@ -110,6 +123,9 @@ See `.env.example` for the full list with descriptions. Key variables:
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
+| `BACKEND_PORT` | No | `8000` | **Dev only** — host port for the FastAPI API |
+| `FRONTEND_PORT` | No | `5173` | **Dev only** — host port for the Vite dev server |
+| `HTTP_PORT` | No | `80` | **Prod only** — host port for the Nginx frontend |
 | `APP_URL` | Yes | — | Frontend origin URL (no trailing slash) |
 | `SECRET_KEY` | Yes | — | Random hex string; `openssl rand -hex 32` |
 | `INVITE_CODE` | No | `""` | If set, required to register new accounts |
@@ -152,6 +168,40 @@ Reminders are sent at:
 - 7 days before the session
 - 24 hours before the session
 - 1 hour before the session
+
+---
+
+## Updating
+
+### Development
+
+```bash
+# 1. Pull the latest code
+git pull
+
+# 2. Rebuild images to pick up any dependency changes
+docker compose up --build -d
+
+# 3. Apply any new database migrations
+docker compose exec backend alembic upgrade head
+```
+
+### Production
+
+```bash
+# 1. Pull the latest code
+git pull
+
+# 2. Rebuild and restart all services with the new images
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+
+# 3. Apply any new database migrations
+docker compose exec backend alembic upgrade head
+```
+
+> **Note:** `alembic upgrade head` is safe to run even when there are no new migrations — it will report "Already at head" and exit cleanly. Running it after every update is a good habit.
+
+> **Note:** Active user sessions are stored in Redis and survive container restarts. Users will not be logged out by an update unless Redis data is cleared.
 
 ---
 
