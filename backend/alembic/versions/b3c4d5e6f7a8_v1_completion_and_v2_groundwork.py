@@ -76,8 +76,7 @@ def upgrade() -> None:
     )
 
     # ── platform_links (v2 groundwork) ────────────────────────────────────────
-    platform_enum = sa.Enum("discord", "matrix", name="platformtype")
-    platform_enum.create(op.get_bind())
+    # Note: op.create_table auto-creates the SAEnum type; no explicit .create() needed.
     op.create_table(
         "platform_links",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
