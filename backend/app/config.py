@@ -31,7 +31,7 @@ class Settings(BaseSettings):
 
     # ── Database ───────────────────────────────────────────────────────────────
     database_url: str  # postgresql+asyncpg://... (used by the app)
-    database_migrate_url: str  # postgresql://...  (used by Alembic)
+    database_migrate_url: str  # postgresql+asyncpg://... (used by Alembic)
 
     # ── Redis ──────────────────────────────────────────────────────────────────
     redis_url: str = "redis://redis:6379/0"

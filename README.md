@@ -130,7 +130,7 @@ See `.env.example` for the full list with descriptions. Key variables:
 | `SECRET_KEY` | Yes | — | Random hex string; `openssl rand -hex 32` |
 | `INVITE_CODE` | No | `""` | If set, required to register new accounts |
 | `DATABASE_URL` | Yes | — | `postgresql+asyncpg://user:pass@host/db` |
-| `DATABASE_MIGRATE_URL` | Yes | — | `postgresql://migrate_user:pass@host/db` |
+| `DATABASE_MIGRATE_URL` | Yes | — | `postgresql+asyncpg://migrate_user:pass@host/db` |
 | `REDIS_URL` | No | `redis://redis:6379/0` | Redis for sessions and task broker |
 | `OIDC_DISCOVERY_URL` | Yes | — | Provider's discovery document URL |
 | `OIDC_CLIENT_ID` | Yes | — | OIDC client ID |
