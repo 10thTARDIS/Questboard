@@ -29,6 +29,7 @@ import {
   updateSession,
   upsertMyNote,
 } from "../api/sessions.js";
+import DateTimePicker from "../components/DateTimePicker.jsx";
 import VotingGrid from "../components/VotingGrid.jsx";
 
 const MODE_LABELS = { vote: "Vote", direct: "Direct", tentative: "Tentative" };
@@ -48,6 +49,23 @@ function fmt(iso) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+/** Format a Date as YYYYMMDDTHHMMSSZ for Google Calendar URLs. */
+function fmtGcal(date) {
+  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+}
+
+function googleCalendarUrl(session) {
+  const start = new Date(session.confirmed_time);
+  const end = new Date(start.getTime() + 4 * 60 * 60 * 1000); // +4h default
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: session.title || "Game Session",
+    dates: `${fmtGcal(start)}/${fmtGcal(end)}`,
+    details: session.description || "",
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
 export default function SessionDetail() {
@@ -310,12 +328,10 @@ export default function SessionDetail() {
               {isGm && isConfirmed && (
                 <div className="mt-3">
                   {editingTime ? (
-                    <form onSubmit={handleReschedule} className="flex items-center gap-2">
-                      <input
-                        type="datetime-local"
+                    <form onSubmit={handleReschedule} className="flex items-center gap-2 flex-wrap">
+                      <DateTimePicker
                         value={rescheduleTime}
-                        onChange={(e) => setRescheduleTime(e.target.value)}
-                        className="rounded-lg bg-gray-800 px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        onChange={setRescheduleTime}
                       />
                       <button type="submit" disabled={savingTime} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium hover:bg-indigo-500 disabled:opacity-50 transition">{savingTime ? "…" : "Reschedule"}</button>
                       <button type="button" onClick={() => setEditingTime(false)} className="text-xs text-gray-500 hover:text-gray-300 transition">Cancel</button>
@@ -419,6 +435,30 @@ export default function SessionDetail() {
             </div>
           )}
         </section>
+
+        {/* Calendar downloads — confirmed sessions only */}
+        {isConfirmed && session.confirmed_time && (
+          <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
+            <h3 className="text-sm font-medium text-gray-400 mb-3">Add to Calendar</h3>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href={`/api/sessions/${id}/calendar.ics`}
+                download
+                className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:border-gray-500 hover:text-white transition"
+              >
+                Download .ics
+              </a>
+              <a
+                href={googleCalendarUrl(session)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:border-gray-500 hover:text-white transition"
+              >
+                Google Calendar
+              </a>
+            </div>
+          </section>
+        )}
 
         {/* Session notes */}
         <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">

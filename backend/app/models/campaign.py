@@ -9,7 +9,7 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Text, func
+from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Integer, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -40,6 +40,10 @@ class Campaign(Base):
     reminder_offsets_minutes: Mapped[list[int] | None] = mapped_column(
         JSONB(astext_type=Text()), nullable=True
     )
+    # Vote notification mode: "each_vote" | "all_voted" | None (disabled)
+    vote_notification_mode: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Auto-close voting after this many hours (None = never auto-close)
+    vote_auto_close_hours: Mapped[int | None] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

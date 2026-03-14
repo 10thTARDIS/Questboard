@@ -5,8 +5,9 @@ Session-scoped:   GET/PATCH/DELETE/POST /api/sessions/{session_id}[/confirm]
 """
 
 import uuid
+from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import (
@@ -17,7 +18,8 @@ from app.auth.dependencies import (
     require_gm,
 )
 from app.database import get_db
-from app.models.session import Session
+from app.models.campaign import Campaign
+from app.models.session import Session, SessionStatus
 from app.models.user import User
 from app.schemas.session import (
     AttendanceEntry,
@@ -233,4 +235,60 @@ async def set_attendance(
         user_id=user_id,
         display_name=u.effective_display_name if u else str(user_id),
         attended=record.attended,
+    )
+
+
+# ── Calendar / ICS download ────────────────────────────────────────────────────
+
+def _build_ics(session: Session, campaign_name: str) -> str:
+    """Generate an iCalendar (.ics) file for a confirmed session."""
+    def _fmt(dt: datetime) -> str:
+        return dt.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+
+    confirmed = session.confirmed_time.astimezone(timezone.utc)  # type: ignore[union-attr]
+    dtend = confirmed + timedelta(hours=4)
+    now = datetime.now(timezone.utc)
+    title = (session.title or "Game Session").replace(",", "\\,").replace(";", "\\;")
+    campaign = campaign_name.replace(",", "\\,").replace(";", "\\;")
+    summary = f"{title} — {campaign}"
+    desc = (session.description or "").replace("\n", "\\n").replace(",", "\\,")
+
+    return (
+        "BEGIN:VCALENDAR\r\n"
+        "VERSION:2.0\r\n"
+        "PRODID:-//Quest Board//Quest Board//EN\r\n"
+        "CALSCALE:GREGORIAN\r\n"
+        "METHOD:PUBLISH\r\n"
+        "BEGIN:VEVENT\r\n"
+        f"UID:{session.id}@questboard\r\n"
+        f"DTSTAMP:{_fmt(now)}\r\n"
+        f"DTSTART:{_fmt(confirmed)}\r\n"
+        f"DTEND:{_fmt(dtend)}\r\n"
+        f"SUMMARY:{summary}\r\n"
+        f"DESCRIPTION:{desc}\r\n"
+        "END:VEVENT\r\n"
+        "END:VCALENDAR\r\n"
+    )
+
+
+@router.get("/sessions/{session_id}/calendar.ics")
+async def download_ics(
+    session_id: uuid.UUID,
+    session: Session = Depends(get_session_for_member),
+    db: AsyncSession = Depends(get_db),
+) -> Response:
+    """Download a .ics calendar file for a confirmed session."""
+    if session.status != SessionStatus.confirmed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Calendar download is only available for confirmed sessions",
+        )
+    campaign = await db.get(Campaign, session.campaign_id)
+    campaign_name = campaign.name if campaign else "Campaign"
+    ics = _build_ics(session, campaign_name)
+    safe_title = (session.title or "session").replace(" ", "_").replace("/", "-")[:40]
+    return Response(
+        content=ics,
+        media_type="text/calendar",
+        headers={"Content-Disposition": f'attachment; filename="{safe_title}.ics"'},
     )

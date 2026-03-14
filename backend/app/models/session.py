@@ -78,6 +78,8 @@ class Session(Base):
     # Celery task IDs for scheduled reminders; stored so they can be revoked on
     # reschedule or cancellation.  Schema: ["task_id_7d", "task_id_24h", "task_id_1h"]
     celery_task_ids: Mapped[list | None] = mapped_column(JSONB, nullable=True)
+    # Celery task ID for the vote auto-close task (vote-mode sessions only)
+    vote_close_task_id: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     # v2.0 transcription fields — populated by the recording bot; null in v1.0
     recording_url: Mapped[str | None] = mapped_column(Text, nullable=True)

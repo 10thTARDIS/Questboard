@@ -17,12 +17,14 @@ import {
   deleteCampaign,
   fetchCampaign,
   fetchMembers,
+  leaveCampaign,
   regenerateInviteCode,
   removeMember,
   updateCampaign,
   updateMember,
 } from "../api/campaigns.js";
 import { createSession, fetchSessions } from "../api/sessions.js";
+import DateTimePicker from "../components/DateTimePicker.jsx";
 
 const COMMON_TIMEZONES = [
   "UTC","America/New_York","America/Chicago","America/Denver","America/Los_Angeles",
@@ -122,6 +124,8 @@ export default function CampaignDetail() {
           discord_webhook_url: c.discord_webhook_url ?? "",
           timezone: c.timezone ?? "",
           reminders: (c.reminder_offsets_minutes ?? []).map(minutesToReminder),
+          vote_notification_mode: c.vote_notification_mode ?? "",
+          vote_auto_close_hours: c.vote_auto_close_hours ?? "",
         });
         const myMember = m.find((mem) => mem.user_id === user?.id);
         setCharNameInput(myMember?.character_name ?? "");
@@ -136,6 +140,7 @@ export default function CampaignDetail() {
     setEditError(null);
     try {
       const minutesList = remindersToMinutes(editForm.reminders);
+      const autoCloseHours = parseInt(editForm.vote_auto_close_hours, 10);
       const updated = await updateCampaign(id, {
         name: editForm.name,
         game_system: editForm.game_system || null,
@@ -143,6 +148,8 @@ export default function CampaignDetail() {
         discord_webhook_url: editForm.discord_webhook_url || null,
         timezone: editForm.timezone || null,
         reminder_offsets_minutes: minutesList.length > 0 ? minutesList : null,
+        vote_notification_mode: editForm.vote_notification_mode || null,
+        vote_auto_close_hours: autoCloseHours > 0 ? autoCloseHours : null,
       });
       setCampaign(updated);
       setEditing(false);
@@ -202,6 +209,16 @@ export default function CampaignDetail() {
     try {
       await removeMember(id, memberId);
       setMembers((prev) => prev.filter((m) => m.user_id !== memberId));
+    } catch (e) {
+      setActionError(e.message);
+    }
+  };
+
+  const handleLeaveCampaign = async () => {
+    if (!confirm(`Leave "${campaign.name}"? You will need a new invite code to rejoin.`)) return;
+    try {
+      await leaveCampaign(id);
+      navigate("/dashboard");
     } catch (e) {
       setActionError(e.message);
     }
@@ -432,6 +449,50 @@ export default function CampaignDetail() {
                   )}
                 </div>
               </div>
+              {/* Vote notification settings */}
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">
+                  Vote notifications (sent to campaign webhook)
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: "", label: "Disabled" },
+                    { value: "each_vote", label: "On each vote" },
+                    { value: "all_voted", label: "When all players voted" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() =>
+                        setEditForm((f) => ({ ...f, vote_notification_mode: opt.value }))
+                      }
+                      className={`rounded-lg px-3 py-1.5 text-xs transition ${
+                        editForm.vote_notification_mode === opt.value
+                          ? "bg-indigo-600 text-white"
+                          : "border border-gray-700 text-gray-400 hover:border-gray-500"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">
+                  Auto-close voting after (hours, blank = never)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  placeholder="e.g. 72"
+                  value={editForm.vote_auto_close_hours}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, vote_auto_close_hours: e.target.value }))
+                  }
+                  className="w-32 rounded-lg bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
               {editError && <p className="text-sm text-red-400">{editError}</p>}
               <div className="flex gap-2 justify-end">
                 <button
@@ -481,9 +542,19 @@ export default function CampaignDetail() {
 
         {/* Members */}
         <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
-          <h3 className="text-sm font-medium text-gray-400 mb-4">
-            Members ({members.length})
-          </h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-medium text-gray-400">
+              Members ({members.length})
+            </h3>
+            {!isGm && (
+              <button
+                onClick={handleLeaveCampaign}
+                className="text-xs text-red-500 hover:text-red-400 transition"
+              >
+                Leave Campaign
+              </button>
+            )}
+          </div>
           <ul className="space-y-2">
             {members.map((m) => (
               <li
@@ -651,12 +722,10 @@ export default function CampaignDetail() {
                 {sessionForm.times
                   .slice(0, sessionTimeCount)
                   .map((t, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <input
-                        type="datetime-local"
+                    <div key={idx} className="flex items-center gap-2 flex-wrap">
+                      <DateTimePicker
                         value={t}
-                        onChange={(e) => setTime(idx, e.target.value)}
-                        className="flex-1 rounded-lg bg-gray-800 px-3 py-2 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        onChange={(v) => setTime(idx, v)}
                       />
                       {sessionForm.scheduling_mode === "vote" &&
                         sessionForm.times.length > 2 && (

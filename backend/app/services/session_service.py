@@ -94,6 +94,32 @@ def _revoke_reminders(session: Session) -> None:
     session.celery_task_ids = None
 
 
+def _schedule_vote_close(session: Session, campaign: Campaign) -> str | None:
+    """Schedule the auto-close task for a vote-mode session.
+
+    Returns the Celery task ID, or None if auto-close is not configured.
+    """
+    if not campaign.vote_auto_close_hours:
+        return None
+
+    from app.tasks.reminder_tasks import auto_close_voting
+
+    now = datetime.now(timezone.utc)
+    eta = now + timedelta(hours=campaign.vote_auto_close_hours)
+    task = auto_close_voting.apply_async(args=[str(session.id)], eta=eta)
+    return task.id
+
+
+def _revoke_vote_close(session: Session) -> None:
+    """Cancel the pending vote auto-close task if one was scheduled."""
+    if not session.vote_close_task_id:
+        return
+    from app.tasks.celery_app import celery_app as _celery
+
+    _celery.control.revoke(session.vote_close_task_id, terminate=True)
+    session.vote_close_task_id = None
+
+
 # ── Sessions ──────────────────────────────────────────────────────────────────
 
 async def create_session(
@@ -125,13 +151,18 @@ async def create_session(
     for t in data.proposed_times:
         db.add(TimeSlot(session_id=session.id, proposed_time=t))
 
-    # For direct mode, schedule reminders now (after flush so session.id exists)
-    if is_direct:
-        campaign = await db.get(Campaign, campaign_id)
-        if campaign:
+    campaign = await db.get(Campaign, campaign_id)
+    if campaign:
+        if is_direct:
+            # Direct mode: confirm and schedule reminders immediately
             task_ids = _schedule_reminders(session, campaign, data.proposed_times[0])
             if task_ids:
                 session.celery_task_ids = task_ids
+        elif data.scheduling_mode == SchedulingMode.vote:
+            # Vote mode: schedule auto-close if configured
+            task_id = _schedule_vote_close(session, campaign)
+            if task_id:
+                session.vote_close_task_id = task_id
 
     await db.commit()
     return await get_session_with_slots(db, session.id)  # type: ignore[return-value]
@@ -232,6 +263,7 @@ async def cancel_session(db: AsyncSession, session: Session) -> Session:
     if session.status == SessionStatus.cancelled:
         raise ValueError("Session is already cancelled")
     _revoke_reminders(session)
+    _revoke_vote_close(session)
     session.status = SessionStatus.cancelled
     await db.commit()
     return await get_session_with_slots(db, session.id)  # type: ignore[return-value]
@@ -269,8 +301,9 @@ async def confirm_session(
             raise ValueError("No time slots found for this session")
         confirmed_time = slots[0].proposed_time
 
-    # Revoke any existing reminder tasks before rescheduling (handles re-confirmation)
+    # Revoke any existing reminder/auto-close tasks before confirming
     _revoke_reminders(session)
+    _revoke_vote_close(session)
 
     session.status = SessionStatus.confirmed
     session.confirmed_time = confirmed_time

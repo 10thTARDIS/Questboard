@@ -123,6 +123,19 @@ async def regenerate_invite_code(
 
 # ── Members ────────────────────────────────────────────────────────────────────
 
+@router.delete("/{campaign_id}/members/me", status_code=status.HTTP_204_NO_CONTENT)
+async def leave_campaign(
+    campaign_id: uuid.UUID,
+    current_user: User = Depends(require_campaign_member),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Leave a campaign voluntarily. The last GM cannot leave."""
+    try:
+        await campaign_service.leave_campaign(db, campaign_id, current_user.id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+
 @router.get("/{campaign_id}/members", response_model=list[MemberResponse])
 async def list_members(
     campaign_id: uuid.UUID,

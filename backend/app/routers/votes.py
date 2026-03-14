@@ -3,14 +3,17 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user, get_session_for_member
+from app.config import settings
 from app.database import get_db
+from app.models.campaign import Campaign, CampaignMember
 from app.models.session import Session, SchedulingMode, SessionStatus
 from app.models.timeslot import TimeSlot
 from app.models.user import User
+from app.models.vote import Vote
 from app.schemas.vote import VoteResponse, VoteSubmit
 from app.services import vote_service
 
@@ -63,7 +66,49 @@ async def submit_vote(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Time slot not found",
         )
-    return await vote_service.upsert_vote(db, slot, current_user.id, body.availability)
+    vote = await vote_service.upsert_vote(db, slot, current_user.id, body.availability)
+
+    # ── Vote notifications ─────────────────────────────────────────────────────
+    campaign = await db.get(Campaign, session.campaign_id)
+    if campaign and campaign.vote_notification_mode:
+        webhook_url = (
+            campaign.discord_webhook_url
+            or settings.default_discord_webhook_url
+            or None
+        )
+        if webhook_url:
+            from app.tasks.reminder_tasks import send_vote_notification
+
+            mode = campaign.vote_notification_mode
+            if mode == "each_vote":
+                send_vote_notification.delay(
+                    campaign_name=campaign.name,
+                    session_title=session.title or "Untitled Session",
+                    webhook_url=webhook_url,
+                    mode="each_vote",
+                    voter_name=current_user.effective_display_name,
+                )
+            elif mode == "all_voted":
+                # Check if every campaign member has cast at least one vote
+                voter_count = await db.scalar(
+                    select(func.count(Vote.user_id.distinct()))
+                    .join(TimeSlot, Vote.time_slot_id == TimeSlot.id)
+                    .where(TimeSlot.session_id == session.id)
+                )
+                member_count = await db.scalar(
+                    select(func.count()).where(
+                        CampaignMember.campaign_id == session.campaign_id
+                    )
+                )
+                if voter_count and member_count and voter_count >= member_count:
+                    send_vote_notification.delay(
+                        campaign_name=campaign.name,
+                        session_title=session.title or "Untitled Session",
+                        webhook_url=webhook_url,
+                        mode="all_voted",
+                    )
+
+    return vote
 
 
 # ── Remove a vote ──────────────────────────────────────────────────────────────

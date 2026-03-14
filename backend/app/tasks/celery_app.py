@@ -28,4 +28,11 @@ celery_app.conf.update(
     accept_content=["json"],  # Reject non-JSON content to prevent deserialization attacks
     timezone="UTC",
     enable_utc=True,
+    # Periodic tasks (requires celery beat worker)
+    beat_schedule={
+        "auto-complete-sessions": {
+            "task": "app.tasks.reminder_tasks.auto_complete_sessions",
+            "schedule": 300.0,  # every 5 minutes
+        },
+    },
 )

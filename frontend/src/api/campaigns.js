@@ -63,6 +63,9 @@ export const updateMember = (campaignId, userId, data) =>
 export const removeMember = (campaignId, userId) =>
   request(`${BASE}/${campaignId}/members/${userId}`, { method: "DELETE" });
 
+export const leaveCampaign = (campaignId) =>
+  request(`${BASE}/${campaignId}/members/me`, { method: "DELETE" });
+
 export const fetchNextSession = (campaignId) =>
   request(`${BASE}/${campaignId}/next-session`);
 

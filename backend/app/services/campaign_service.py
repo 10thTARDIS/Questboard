@@ -192,6 +192,43 @@ async def update_member(
     return member
 
 
+async def leave_campaign(
+    db: AsyncSession,
+    campaign_id: uuid.UUID,
+    user_id: uuid.UUID,
+) -> None:
+    """Allow a user to leave a campaign voluntarily.
+
+    Raises ValueError if the user is not a member, or if they are the last GM
+    (they must transfer the GM role or delete the campaign instead).
+    """
+    result = await db.execute(
+        select(CampaignMember).where(
+            CampaignMember.campaign_id == campaign_id,
+            CampaignMember.user_id == user_id,
+        )
+    )
+    member = result.scalar_one_or_none()
+    if member is None:
+        raise ValueError("You are not a member of this campaign")
+
+    if member.role == MemberRole.gm:
+        gm_count = await db.scalar(
+            select(func.count()).where(
+                CampaignMember.campaign_id == campaign_id,
+                CampaignMember.role == MemberRole.gm,
+            )
+        )
+        if (gm_count or 0) <= 1:
+            raise ValueError(
+                "You are the last GM and cannot leave. "
+                "Transfer the GM role to another member or delete the campaign."
+            )
+
+    await db.delete(member)
+    await db.commit()
+
+
 async def remove_member(
     db: AsyncSession,
     campaign_id: uuid.UUID,

@@ -22,6 +22,15 @@ def _validate_webhook(v: str | None) -> str | None:
 
 # ── Input schemas ─────────────────────────────────────────────────────────────
 
+_VOTE_NOTIFICATION_MODES = {"each_vote", "all_voted"}
+
+
+def _validate_vote_notification_mode(v: str | None) -> str | None:
+    if v is not None and v not in _VOTE_NOTIFICATION_MODES:
+        raise ValueError("vote_notification_mode must be 'each_vote', 'all_voted', or null")
+    return v
+
+
 class CampaignCreate(BaseModel):
     name: str
     game_system: str | None = None
@@ -29,11 +38,18 @@ class CampaignCreate(BaseModel):
     discord_webhook_url: str | None = None
     timezone: str | None = None
     reminder_offsets_minutes: list[int] | None = None
+    vote_notification_mode: str | None = None
+    vote_auto_close_hours: int | None = None
 
     @field_validator("discord_webhook_url")
     @classmethod
     def validate_webhook_url(cls, v: str | None) -> str | None:
         return _validate_webhook(v)
+
+    @field_validator("vote_notification_mode")
+    @classmethod
+    def validate_vote_notification_mode(cls, v: str | None) -> str | None:
+        return _validate_vote_notification_mode(v)
 
 
 class CampaignUpdate(BaseModel):
@@ -43,11 +59,18 @@ class CampaignUpdate(BaseModel):
     discord_webhook_url: str | None = None
     timezone: str | None = None
     reminder_offsets_minutes: list[int] | None = None
+    vote_notification_mode: str | None = None
+    vote_auto_close_hours: int | None = None
 
     @field_validator("discord_webhook_url")
     @classmethod
     def validate_webhook_url(cls, v: str | None) -> str | None:
         return _validate_webhook(v)
+
+    @field_validator("vote_notification_mode")
+    @classmethod
+    def validate_vote_notification_mode(cls, v: str | None) -> str | None:
+        return _validate_vote_notification_mode(v)
 
 
 class JoinRequest(BaseModel):
@@ -76,6 +99,8 @@ class CampaignResponse(BaseModel):
     invite_code: str | None
     timezone: str | None
     reminder_offsets_minutes: list[int] | None
+    vote_notification_mode: str | None
+    vote_auto_close_hours: int | None
     created_at: datetime
 
     model_config = {"from_attributes": True}
