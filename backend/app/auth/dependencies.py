@@ -18,20 +18,20 @@ _COOKIE_NAME = "qb_session"
 # ── Authentication ────────────────────────────────────────────────────────────
 
 async def get_current_user(
-    session_id: str | None = Cookie(default=None, alias=_COOKIE_NAME),
+    cookie_token: str | None = Cookie(default=None, alias=_COOKIE_NAME),
     db: AsyncSession = Depends(get_db),
 ) -> User:
     """Return the authenticated User, or raise 401.
 
     Reads the opaque session cookie → Redis → database.
     """
-    if not session_id:
+    if not cookie_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
         )
 
-    user_id = await get_session(session_id)
+    user_id = await get_session(cookie_token)
     if not user_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
