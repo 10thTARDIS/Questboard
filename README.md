@@ -1,6 +1,6 @@
 # Quest Board
 
-A self-hosted TTRPG session scheduling tool. The GM proposes time slots, players vote, and the group gets reminded via Discord before every session.
+A self-hosted TTRPG session scheduling tool. The GM proposes time slots, players vote, and the group gets reminded via Discord before every session.  This was created due to the apparently-imminent shutdown of RollRota; the SSL certificate for the site has not been renewed after being expired for a month, no new features have been added in a very very long time, and the developers are no longer active in their Discord.
 
 ### AI Usage Disclaimer
 
