@@ -2,8 +2,9 @@
 
 import hmac
 import uuid
+from urllib.parse import quote
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Request, status
+from fastapi import APIRouter, Cookie, Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -37,6 +38,14 @@ _COOKIE_OPTS: dict = {
 }
 
 
+def _error_redirect(message: str) -> RedirectResponse:
+    """Redirect the browser to the frontend error page with a human-readable message."""
+    return RedirectResponse(
+        url=f"{settings.app_url}/auth-error?message={quote(message)}",
+        status_code=302,
+    )
+
+
 @router.get("/login", include_in_schema=True)
 @limiter.limit("10/minute")
 async def login(
@@ -48,7 +57,14 @@ async def login(
     Stores (state → code_verifier + invite_code) in Redis for 10 minutes,
     then redirects the browser to the provider's authorization endpoint.
     """
-    discovery = await fetch_oidc_discovery()
+    try:
+        discovery = await fetch_oidc_discovery()
+    except Exception:
+        return _error_redirect(
+            "Could not reach the identity provider. "
+            "Check OIDC_DISCOVERY_URL and try again."
+        )
+
     code_verifier, code_challenge = generate_pkce_pair()
     state = generate_state()
 
@@ -74,9 +90,8 @@ async def callback(
     # ── 1. Validate & consume state (CSRF + replay protection) ────────────────
     pkce_data = await consume_pkce_state(state)
     if pkce_data is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid or expired state parameter — possible CSRF attempt",
+        return _error_redirect(
+            "The sign-in request expired or was already used. Please try again."
         )
 
     code_verifier: str = pkce_data["code_verifier"]
@@ -87,18 +102,18 @@ async def callback(
     try:
         tokens = await exchange_code_for_tokens(discovery, code, code_verifier)
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to exchange authorization code with identity provider",
+        return _error_redirect(
+            "Failed to exchange the authorization code with your identity provider. "
+            "Please try signing in again."
         )
 
     # ── 3. Fetch user profile from provider ───────────────────────────────────
     try:
         userinfo = await fetch_userinfo(discovery, tokens["access_token"])
     except Exception:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to fetch user info from identity provider",
+        return _error_redirect(
+            "Signed in successfully but could not retrieve your profile. "
+            "Please try again."
         )
 
     sub: str = userinfo["sub"]
@@ -113,9 +128,9 @@ async def callback(
     if user is None:
         # New user — check invite code gate
         if settings.invite_code and not hmac.compare_digest(invite_code, settings.invite_code):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="A valid invite code is required to register",
+            return _error_redirect(
+                "A valid invite code is required to register. "
+                "Please ask your GM for an invite code and try again."
             )
         user = User(
             id=uuid.uuid4(),

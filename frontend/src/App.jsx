@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth.jsx";
 import AuthGuard from "./components/AuthGuard.jsx";
 import Login from "./pages/Login.jsx";
+import AuthError from "./pages/AuthError.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
 import CampaignDetail from "./pages/CampaignDetail.jsx";
 import SessionDetail from "./pages/SessionDetail.jsx";
@@ -13,6 +14,7 @@ export default function App() {
         <Routes>
           {/* Public */}
           <Route path="/login" element={<Login />} />
+          <Route path="/auth-error" element={<AuthError />} />
 
           {/* Protected */}
           <Route
