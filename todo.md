@@ -30,17 +30,18 @@ Things that still need doing:
 
 ## Still Outstanding
 
-[] Add a time selector to the session scheduler with a proper time picker — minutes selectable in 15-minute increments (dropdown) and AM/PM selector — rather than the browser-native datetime-local input
-[] Add calendar event downloads for confirmed sessions: .ics file download, Google Calendar link, Apple Calendar link
+[] Add Apple Calendar link to confirmed session calendar section (Apple Calendar uses the same .ics file; add a direct webcal:// link alongside the existing .ics download)
 
-## New Items for v1
+## New Items for v1 — Completed
 
-[] Session status auto-complete: Celery Beat task that automatically transitions a confirmed session to `completed` status once its `confirmed_time` passes (removes the need for the GM to manually mark sessions done)
-[] Vote notifications (per-campaign setting, GM-configurable):
+[x] Add a time selector to the session scheduler with a proper time picker — minutes selectable in 15-minute increments (dropdown) and AM/PM selector  (DateTimePicker component replacing datetime-local in session create form and reschedule form)
+[x] Add calendar event downloads for confirmed sessions  (.ics file download at GET /api/sessions/{id}/calendar.ics; Google Calendar link; both shown on SessionDetail for confirmed sessions)
+[x] Session status auto-complete  (Celery Beat task every 5 minutes; transitions confirmed sessions to completed once confirmed_time passes)
+[x] Vote notifications (per-campaign setting, GM-configurable):
    - Mode A: notify when every eligible player has voted ("all votes in")
    - Mode B: notify on each individual vote as it arrives
-   - Auto-close voting: after a GM-configured duration, automatically close voting and confirm the highest-voted time slot
-[] Leave campaign: allow players to leave a campaign themselves rather than requiring the GM to remove them
+   - Auto-close voting: after a GM-configured duration (vote_auto_close_hours), automatically close voting and confirm the highest-voted time slot
+[x] Leave campaign: players can leave via "Leave Campaign" button on the campaign page; last GM is blocked with an error message
 
 
 # Version 2.0
