@@ -3,8 +3,12 @@ FROM node:20-alpine AS development
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+# package*.json copies both package.json and package-lock.json (if present).
+# npm install is used instead of npm ci so the build succeeds even without a
+# pre-existing lockfile. Once built, commit the generated package-lock.json
+# to the repository so future builds can use the faster `npm ci`.
+COPY package*.json ./
+RUN npm install
 
 # In development, source is bind-mounted. node_modules lives inside the
 # container as an anonymous volume so the host copy doesn't shadow it.
@@ -19,8 +23,8 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
-RUN npm ci
+COPY package*.json ./
+RUN npm install
 
 COPY . .
 
