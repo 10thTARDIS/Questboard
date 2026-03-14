@@ -7,17 +7,68 @@
  * so the page doesn't need to re-fetch from the server.
  */
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
+import { useTheme } from "../hooks/useTheme.jsx";
 import {
   createCampaign,
   fetchCampaigns,
+  fetchNextSession,
   joinCampaign,
 } from "../api/campaigns.js";
 
+/**
+ * Format a countdown from now to a future date.
+ * Returns a string like "3d 4h", "6h 30m", "45m", "< 1m".
+ */
+function formatCountdown(isoDate) {
+  const diff = new Date(isoDate) - Date.now();
+  if (diff <= 0) return null;
+  const totalMinutes = Math.floor(diff / 60000);
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m`;
+  return "< 1m";
+}
+
+function SessionCountdown({ campaignId }) {
+  const [next, setNext] = useState(undefined); // undefined = loading, null = none
+  const [, setTick] = useState(0);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    fetchNextSession(campaignId)
+      .then(setNext)
+      .catch(() => setNext(null));
+  }, [campaignId]);
+
+  useEffect(() => {
+    if (!next?.confirmed_time) return;
+    timerRef.current = setInterval(() => setTick((t) => t + 1), 60000);
+    return () => clearInterval(timerRef.current);
+  }, [next]);
+
+  if (next === undefined) return null;
+  if (!next) return null;
+
+  const countdown = formatCountdown(next.confirmed_time);
+  if (!countdown) return null;
+
+  return (
+    <p className="text-xs text-indigo-400 mt-0.5">
+      Next session in {countdown}
+    </p>
+  );
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
+  const { theme, toggle: toggleTheme } = useTheme();
+  const displayName = user?.effective_display_name ?? user?.display_name;
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -93,7 +144,22 @@ export default function Dashboard() {
       <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">Quest Board</h1>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-400 truncate max-w-[160px]">{user?.display_name}</span>
+          <span className="text-sm text-gray-400 truncate max-w-[160px]">{displayName}</span>
+          <Link to="/profile" className="text-sm text-gray-500 hover:text-white transition">
+            Profile
+          </Link>
+          {user?.is_admin && (
+            <Link to="/admin" className="text-sm text-gray-500 hover:text-white transition">
+              Admin
+            </Link>
+          )}
+          <button
+            onClick={toggleTheme}
+            className="text-sm text-gray-500 hover:text-white transition"
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {theme === "dark" ? "☀" : "☾"}
+          </button>
           <a
             href="/auth/logout"
             className="text-sm text-gray-500 hover:text-white transition"
@@ -224,6 +290,7 @@ export default function Dashboard() {
                   {c.game_system && (
                     <p className="text-sm text-gray-400">{c.game_system}</p>
                   )}
+                  <SessionCountdown campaignId={c.id} />
                 </div>
                 <span
                   className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${

@@ -20,8 +20,16 @@ import {
   regenerateInviteCode,
   removeMember,
   updateCampaign,
+  updateMember,
 } from "../api/campaigns.js";
 import { createSession, fetchSessions } from "../api/sessions.js";
+
+const COMMON_TIMEZONES = [
+  "UTC","America/New_York","America/Chicago","America/Denver","America/Los_Angeles",
+  "America/Toronto","America/Sao_Paulo","Europe/London","Europe/Dublin","Europe/Paris",
+  "Europe/Berlin","Europe/Amsterdam","Europe/Moscow","Asia/Dubai","Asia/Kolkata",
+  "Asia/Singapore","Asia/Shanghai","Asia/Tokyo","Australia/Sydney","Pacific/Auckland",
+];
 
 const STATUS_CLASSES = {
   proposed:  "bg-blue-900/50 text-blue-300",
@@ -64,6 +72,11 @@ export default function CampaignDetail() {
   const [editError, setEditError] = useState(null);
   const [saving, setSaving] = useState(false);
 
+  // Character name editing state
+  const [editingCharName, setEditingCharName] = useState(false);
+  const [charNameInput, setCharNameInput] = useState("");
+  const [savingCharName, setSavingCharName] = useState(false);
+
   // Misc action state
   const [copied, setCopied] = useState(false);
   const [actionError, setActionError] = useState(null);
@@ -89,7 +102,11 @@ export default function CampaignDetail() {
           game_system: c.game_system ?? "",
           description: c.description ?? "",
           discord_webhook_url: c.discord_webhook_url ?? "",
+          timezone: c.timezone ?? "",
+          reminder_offsets_minutes: (c.reminder_offsets_minutes ?? []).join(", "),
         });
+        const myMember = m.find((mem) => mem.user_id === user?.id);
+        setCharNameInput(myMember?.character_name ?? "");
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -100,11 +117,22 @@ export default function CampaignDetail() {
     setSaving(true);
     setEditError(null);
     try {
+      // Parse reminder_offsets_minutes from comma-separated string
+      let reminders = null;
+      if (editForm.reminder_offsets_minutes.trim()) {
+        reminders = editForm.reminder_offsets_minutes
+          .split(",")
+          .map((s) => parseInt(s.trim(), 10))
+          .filter((n) => !isNaN(n) && n > 0);
+        if (reminders.length === 0) reminders = null;
+      }
       const updated = await updateCampaign(id, {
         name: editForm.name,
         game_system: editForm.game_system || null,
         description: editForm.description || null,
         discord_webhook_url: editForm.discord_webhook_url || null,
+        timezone: editForm.timezone || null,
+        reminder_offsets_minutes: reminders,
       });
       setCampaign(updated);
       setEditing(false);
@@ -112,6 +140,24 @@ export default function CampaignDetail() {
       setEditError(e.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveCharName = async (e) => {
+    e.preventDefault();
+    setSavingCharName(true);
+    try {
+      const updated = await updateMember(id, user.id, {
+        character_name: charNameInput.trim() || null,
+      });
+      setMembers((prev) =>
+        prev.map((m) => (m.user_id === user.id ? { ...m, character_name: updated.character_name } : m))
+      );
+      setEditingCharName(false);
+    } catch (e) {
+      setActionError(e.message);
+    } finally {
+      setSavingCharName(false);
     }
   };
 
@@ -299,6 +345,32 @@ export default function CampaignDetail() {
                 }
                 className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">Campaign timezone</label>
+                <select
+                  value={editForm.timezone}
+                  onChange={(e) => setEditForm((f) => ({ ...f, timezone: e.target.value }))}
+                  className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">— Use server default —</option>
+                  {COMMON_TIMEZONES.map((tz) => (
+                    <option key={tz} value={tz}>{tz}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-gray-400 block mb-1">
+                  Reminder offsets (minutes before session, comma-separated)
+                </label>
+                <input
+                  placeholder="e.g. 10080, 1440, 60 (= 7d, 24h, 1h)"
+                  value={editForm.reminder_offsets_minutes}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, reminder_offsets_minutes: e.target.value }))
+                  }
+                  className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
               {editError && <p className="text-sm text-red-400">{editError}</p>}
               <div className="flex gap-2 justify-end">
                 <button
@@ -369,10 +441,15 @@ export default function CampaignDetail() {
                       {m.display_name[0]?.toUpperCase()}
                     </div>
                   )}
-                  <span className="text-sm">{m.display_name}</span>
-                  {m.user_id === user?.id && (
-                    <span className="text-xs text-gray-500">(you)</span>
-                  )}
+                  <div>
+                    <span className="text-sm">{m.display_name}</span>
+                    {m.character_name && (
+                      <span className="ml-1.5 text-xs text-indigo-400">as {m.character_name}</span>
+                    )}
+                    {m.user_id === user?.id && (
+                      <span className="ml-1.5 text-xs text-gray-500">(you)</span>
+                    )}
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span
@@ -384,6 +461,32 @@ export default function CampaignDetail() {
                   >
                     {m.role === "gm" ? "GM" : "Player"}
                   </span>
+                  {m.user_id === user?.id && (
+                    editingCharName ? (
+                      <form onSubmit={handleSaveCharName} className="flex items-center gap-1">
+                        <input
+                          autoFocus
+                          placeholder="Character name"
+                          value={charNameInput}
+                          onChange={(e) => setCharNameInput(e.target.value)}
+                          className="rounded bg-gray-700 px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 w-32"
+                        />
+                        <button type="submit" disabled={savingCharName} className="text-xs text-indigo-400 hover:text-indigo-300 transition">
+                          {savingCharName ? "…" : "Save"}
+                        </button>
+                        <button type="button" onClick={() => setEditingCharName(false)} className="text-xs text-gray-500 hover:text-gray-300 transition">
+                          ✕
+                        </button>
+                      </form>
+                    ) : (
+                      <button
+                        onClick={() => setEditingCharName(true)}
+                        className="text-xs text-gray-500 hover:text-indigo-400 transition"
+                      >
+                        {m.character_name ? "Edit character" : "Set character"}
+                      </button>
+                    )
+                  )}
                   {isGm && m.user_id !== user?.id && (
                     <button
                       onClick={() => handleRemoveMember(m.user_id, m.display_name)}

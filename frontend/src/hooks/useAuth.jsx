@@ -18,8 +18,13 @@ export function AuthProvider({ children }) {
       .finally(() => setLoading(false));
   }, []);
 
+  const refreshUser = () =>
+    fetchMe()
+      .then(setUser)
+      .catch(() => setUser(null));
+
   return (
-    <AuthContext.Provider value={{ user, loading, setUser }}>
+    <AuthContext.Provider value={{ user, loading, setUser, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

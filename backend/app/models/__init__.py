@@ -9,3 +9,4 @@ from app.models.campaign import Campaign as Campaign, CampaignMember as Campaign
 from app.models.session import Session as Session  # noqa: F401
 from app.models.timeslot import TimeSlot as TimeSlot  # noqa: F401
 from app.models.vote import Vote as Vote  # noqa: F401
+from app.models.session_note import SessionNote as SessionNote  # noqa: F401

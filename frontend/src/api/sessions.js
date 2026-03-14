@@ -80,3 +80,14 @@ export const submitVote = (sessionId, slotId, availability) =>
 
 export const deleteVote = (sessionId, slotId) =>
   request(`/api/sessions/${sessionId}/timeslots/${slotId}/vote`, { method: "DELETE" });
+
+// ── Session notes ──────────────────────────────────────────────────────────────
+
+export const fetchMyNote = (sessionId) =>
+  request(`/api/sessions/${sessionId}/my-note`);
+
+export const upsertMyNote = (sessionId, content) =>
+  request(`/api/sessions/${sessionId}/my-note`, {
+    method: "PUT",
+    body: JSON.stringify({ content }),
+  });

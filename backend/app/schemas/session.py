@@ -47,6 +47,10 @@ class SessionUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     session_notes: str | None = None  # GM adds post-session notes
+    # For editing proposed times on a non-confirmed session (vote mode)
+    proposed_times: list[datetime] | None = None
+    # For rescheduling a confirmed session to a new time
+    reschedule_time: datetime | None = None
 
 
 class ConfirmRequest(BaseModel):
@@ -82,5 +86,22 @@ class SessionResponse(BaseModel):
     created_by: uuid.UUID
     created_at: datetime
     time_slots: list[TimeSlotResponse]
+
+    model_config = {"from_attributes": True}
+
+
+# ── Session notes ──────────────────────────────────────────────────────────────
+
+class SessionNoteUpsert(BaseModel):
+    content: str
+
+
+class SessionNoteResponse(BaseModel):
+    id: uuid.UUID
+    session_id: uuid.UUID
+    user_id: uuid.UUID
+    content: str
+    created_at: datetime
+    updated_at: datetime
 
     model_config = {"from_attributes": True}

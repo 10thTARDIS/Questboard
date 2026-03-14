@@ -94,6 +94,21 @@ async def require_gm(
 # ── Session-scoped authorisation ───────────────────────────────────────────────
 # These resolve the campaign from the session, so callers only need session_id.
 
+async def require_admin(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Require the current user to be a site admin."""
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin role required",
+        )
+    return current_user
+
+
+# ── Session-scoped authorisation ───────────────────────────────────────────────
+# These resolve the campaign from the session, so callers only need session_id.
+
 async def get_session_for_member(
     session_id: uuid.UUID,
     current_user: User = Depends(get_current_user),

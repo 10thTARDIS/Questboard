@@ -54,5 +54,14 @@ export const regenerateInviteCode = (id) =>
 
 export const fetchMembers = (id) => request(`${BASE}/${id}/members`);
 
+export const updateMember = (campaignId, userId, data) =>
+  request(`${BASE}/${campaignId}/members/${userId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+
 export const removeMember = (campaignId, userId) =>
   request(`${BASE}/${campaignId}/members/${userId}`, { method: "DELETE" });
+
+export const fetchNextSession = (campaignId) =>
+  request(`${BASE}/${campaignId}/next-session`);

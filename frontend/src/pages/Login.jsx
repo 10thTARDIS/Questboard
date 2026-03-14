@@ -46,6 +46,7 @@ export default function Login() {
           placeholder="Invite code (if required)"
           value={inviteCode}
           onChange={(e) => setInviteCode(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") handleSignIn(); }}
           className="mb-4 w-full rounded-lg bg-gray-800 px-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
 

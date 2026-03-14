@@ -89,3 +89,6 @@ class Session(Base):
     time_slots: Mapped[list["TimeSlot"]] = relationship(  # noqa: F821
         back_populates="session", cascade="all, delete-orphan"
     )
+    notes: Mapped[list["SessionNote"]] = relationship(  # noqa: F821
+        back_populates="session", cascade="all, delete-orphan"
+    )

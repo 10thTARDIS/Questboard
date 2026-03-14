@@ -1,4 +1,4 @@
-"""Pydantic output schemas for the User resource."""
+"""Pydantic schemas for the User resource."""
 
 import uuid
 from datetime import datetime
@@ -15,8 +15,20 @@ class UserResponse(BaseModel):
 
     id: uuid.UUID
     display_name: str
+    display_name_override: str | None = None
+    effective_display_name: str
     email: str | None = None
     avatar_url: str | None = None
+    timezone: str | None = None
+    is_admin: bool = False
+    last_login_at: datetime | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class UserUpdate(BaseModel):
+    """PATCH /api/me — all fields optional."""
+
+    display_name_override: str | None = None
+    timezone: str | None = None

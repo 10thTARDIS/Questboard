@@ -2,6 +2,7 @@
 
 import hmac
 import uuid
+from datetime import datetime, timezone
 from urllib.parse import quote
 
 from fastapi import APIRouter, Cookie, Depends, Query, Request
@@ -133,6 +134,9 @@ async def callback(
                     "A valid invite code is required to register. "
                     "Please ask your GM for an invite code and try again."
                 )
+            # First user ever becomes admin automatically
+            from sqlalchemy import func
+            user_count = await db.scalar(select(func.count()).select_from(User)) or 0
             user = User(
                 id=uuid.uuid4(),
                 oidc_sub=sub,
@@ -144,6 +148,8 @@ async def callback(
                 ),
                 email=userinfo.get("email"),
                 avatar_url=userinfo.get("picture"),
+                is_admin=(user_count == 0),
+                last_login_at=datetime.now(timezone.utc),
             )
             db.add(user)
             await db.flush()
@@ -158,6 +164,7 @@ async def callback(
                 user.email = userinfo["email"]
             if userinfo.get("picture"):
                 user.avatar_url = userinfo["picture"]
+            user.last_login_at = datetime.now(timezone.utc)
 
         await db.commit()
         await db.refresh(user)

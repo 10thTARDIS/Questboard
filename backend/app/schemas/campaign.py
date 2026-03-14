@@ -27,6 +27,8 @@ class CampaignCreate(BaseModel):
     game_system: str | None = None
     description: str | None = None
     discord_webhook_url: str | None = None
+    timezone: str | None = None
+    reminder_offsets_minutes: list[int] | None = None
 
     @field_validator("discord_webhook_url")
     @classmethod
@@ -39,6 +41,8 @@ class CampaignUpdate(BaseModel):
     game_system: str | None = None
     description: str | None = None
     discord_webhook_url: str | None = None
+    timezone: str | None = None
+    reminder_offsets_minutes: list[int] | None = None
 
     @field_validator("discord_webhook_url")
     @classmethod
@@ -70,6 +74,8 @@ class CampaignResponse(BaseModel):
     description: str | None
     discord_webhook_url: str | None
     invite_code: str | None
+    timezone: str | None
+    reminder_offsets_minutes: list[int] | None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -81,4 +87,10 @@ class MemberResponse(BaseModel):
     email: str | None
     avatar_url: str | None
     role: MemberRole
+    character_name: str | None
     joined_at: datetime
+
+
+class MemberUpdate(BaseModel):
+    """PATCH /{campaign_id}/members/{user_id} — members can set their character name."""
+    character_name: str | None = None

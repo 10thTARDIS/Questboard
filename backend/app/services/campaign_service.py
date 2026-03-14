@@ -17,6 +17,7 @@ from app.schemas.campaign import (
     CampaignSummary,
     CampaignUpdate,
     MemberResponse,
+    MemberUpdate,
 )
 
 
@@ -31,6 +32,8 @@ async def create_campaign(
         game_system=data.game_system,
         description=data.description,
         discord_webhook_url=data.discord_webhook_url,
+        timezone=data.timezone,
+        reminder_offsets_minutes=data.reminder_offsets_minutes,
         invite_code=secrets.token_urlsafe(8),
     )
     db.add(campaign)
@@ -155,14 +158,38 @@ async def list_members(
     return [
         MemberResponse(
             user_id=row.CampaignMember.user_id,
-            display_name=row.User.display_name,
+            display_name=row.User.effective_display_name,
             email=row.User.email,
             avatar_url=row.User.avatar_url,
             role=row.CampaignMember.role,
+            character_name=row.CampaignMember.character_name,
             joined_at=row.CampaignMember.joined_at,
         )
         for row in result.all()
     ]
+
+
+async def update_member(
+    db: AsyncSession,
+    campaign_id: uuid.UUID,
+    user_id: uuid.UUID,
+    data: MemberUpdate,
+) -> CampaignMember | None:
+    """Update a member's character name.  Returns None if the member doesn't exist."""
+    result = await db.execute(
+        select(CampaignMember).where(
+            CampaignMember.campaign_id == campaign_id,
+            CampaignMember.user_id == user_id,
+        )
+    )
+    member = result.scalar_one_or_none()
+    if member is None:
+        return None
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(member, field, value)
+    await db.commit()
+    await db.refresh(member)
+    return member
 
 
 async def remove_member(

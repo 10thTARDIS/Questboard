@@ -23,8 +23,10 @@ from app.schemas.campaign import (
     CampaignUpdate,
     JoinRequest,
     MemberResponse,
+    MemberUpdate,
 )
-from app.services import campaign_service
+from app.schemas.session import SessionListItem
+from app.services import campaign_service, session_service
 
 router = APIRouter()
 
@@ -130,6 +132,31 @@ async def list_members(
     return await campaign_service.list_members(db, campaign_id)
 
 
+@router.patch("/{campaign_id}/members/{user_id}", response_model=MemberResponse)
+async def update_member(
+    campaign_id: uuid.UUID,
+    user_id: uuid.UUID,
+    data: MemberUpdate,
+    current_user: User = Depends(require_campaign_member),
+    db: AsyncSession = Depends(get_db),
+) -> MemberResponse:
+    """Update a member's character name.  Members can only update their own record."""
+    if current_user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only update your own member record",
+        )
+    member = await campaign_service.update_member(db, campaign_id, user_id, data)
+    if member is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
+    # Re-fetch with user info to build MemberResponse
+    members = await campaign_service.list_members(db, campaign_id)
+    for m in members:
+        if m.user_id == user_id:
+            return m
+    raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Member not found")
+
+
 @router.delete(
     "/{campaign_id}/members/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
@@ -147,3 +174,13 @@ async def remove_member(
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+
+@router.get("/{campaign_id}/next-session", response_model=SessionListItem | None)
+async def get_next_session(
+    campaign_id: uuid.UUID,
+    _: User = Depends(require_campaign_member),
+    db: AsyncSession = Depends(get_db),
+) -> SessionListItem | None:
+    """Return the next upcoming confirmed session for this campaign, or null."""
+    return await session_service.get_next_confirmed_session(db, campaign_id)

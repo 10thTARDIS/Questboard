@@ -55,9 +55,15 @@ def _schedule_reminders(
         webhook_url,
     )
 
-    # Timed reminders: 7 days / 24 hours / 1 hour before session
+    # Timed reminders — use campaign-level offsets if set, otherwise default (7d/24h/1h)
+    default_offsets_hours = [7 * 24, 24, 1]
+    if campaign.reminder_offsets_minutes:
+        reminder_hours_list = [m / 60 for m in campaign.reminder_offsets_minutes]
+    else:
+        reminder_hours_list = default_offsets_hours
+
     now = datetime.now(timezone.utc)
-    for hours in (7 * 24, 24, 1):
+    for hours in reminder_hours_list:
         eta = confirmed_time.astimezone(timezone.utc) - timedelta(hours=hours)
         if eta <= now:
             continue  # already past — skip
@@ -171,8 +177,51 @@ async def update_session(
     session: Session,
     data: SessionUpdate,
 ) -> Session:
-    """Apply only the provided fields to the session (partial update)."""
-    for field, value in data.model_dump(exclude_unset=True).items():
+    """Apply only the provided fields to the session (partial update).
+
+    Special handling:
+    - proposed_times: replaces all time slots on a non-confirmed session
+    - reschedule_time: reschedules a confirmed session to a new time
+    """
+    updates = data.model_dump(exclude_unset=True)
+
+    # Handle proposed_times — replace all existing slots
+    if "proposed_times" in updates:
+        if session.status == SessionStatus.confirmed:
+            raise ValueError("Use reschedule_time to change a confirmed session's time")
+        proposed_times = updates.pop("proposed_times")
+        # Delete existing slots
+        existing = await db.execute(
+            select(TimeSlot).where(TimeSlot.session_id == session.id)
+        )
+        for slot in existing.scalars().all():
+            await db.delete(slot)
+        # Insert new slots
+        for t in proposed_times:
+            db.add(TimeSlot(session_id=session.id, proposed_time=t))
+
+    # Handle reschedule_time — move a confirmed session
+    if "reschedule_time" in updates:
+        new_time = updates.pop("reschedule_time")
+        if session.status != SessionStatus.confirmed:
+            raise ValueError("Session is not confirmed; use proposed_times to edit slots")
+        _revoke_reminders(session)
+        session.confirmed_time = new_time
+        # Update or replace the time slot that matches the old confirmed time
+        existing = await db.execute(
+            select(TimeSlot).where(TimeSlot.session_id == session.id)
+        )
+        for slot in existing.scalars().all():
+            await db.delete(slot)
+        db.add(TimeSlot(session_id=session.id, proposed_time=new_time))
+        await db.flush()
+        campaign = await db.get(Campaign, session.campaign_id)
+        if campaign:
+            task_ids = _schedule_reminders(session, campaign, new_time)
+            if task_ids:
+                session.celery_task_ids = task_ids
+
+    for field, value in updates.items():
         setattr(session, field, value)
     await db.commit()
     return await get_session_with_slots(db, session.id)  # type: ignore[return-value]
@@ -239,6 +288,25 @@ async def confirm_session(
 
 
 # ── Time slots ────────────────────────────────────────────────────────────────
+
+async def get_next_confirmed_session(
+    db: AsyncSession,
+    campaign_id: uuid.UUID,
+) -> Session | None:
+    """Return the next upcoming confirmed session for a campaign, or None."""
+    now = datetime.now(timezone.utc)
+    result = await db.execute(
+        select(Session)
+        .where(
+            Session.campaign_id == campaign_id,
+            Session.status == SessionStatus.confirmed,
+            Session.confirmed_time > now,
+        )
+        .order_by(Session.confirmed_time)
+        .limit(1)
+    )
+    return result.scalar_one_or_none()
+
 
 async def add_timeslot(
     db: AsyncSession,

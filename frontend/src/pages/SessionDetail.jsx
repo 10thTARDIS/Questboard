@@ -21,9 +21,11 @@ import { fetchMembers } from "../api/campaigns.js";
 import {
   cancelSession,
   confirmSession,
+  fetchMyNote,
   fetchSession,
   fetchVotes,
   updateSession,
+  upsertMyNote,
 } from "../api/sessions.js";
 import VotingGrid from "../components/VotingGrid.jsx";
 
@@ -58,10 +60,26 @@ export default function SessionDetail() {
   const [error, setError] = useState(null);
   const [actionError, setActionError] = useState(null);
 
-  // Edit-notes form
+  // GM session-notes form (stored on the session object)
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+
+  // GM inline-edit form (title / description)
+  const [editingSession, setEditingSession] = useState(false);
+  const [editForm, setEditForm] = useState({ title: "", description: "" });
+  const [savingSession, setSavingSession] = useState(false);
+
+  // Reschedule form (confirmed sessions only)
+  const [editingTime, setEditingTime] = useState(false);
+  const [rescheduleTime, setRescheduleTime] = useState("");
+  const [savingTime, setSavingTime] = useState(false);
+
+  // Per-user private note
+  const [myNote, setMyNote] = useState(null);
+  const [editingMyNote, setEditingMyNote] = useState(false);
+  const [myNoteInput, setMyNoteInput] = useState("");
+  const [savingMyNote, setSavingMyNote] = useState(false);
 
   const isGm = members.some((m) => m.user_id === user?.id && m.role === "gm");
 
@@ -70,11 +88,14 @@ export default function SessionDetail() {
       .then((s) => {
         setSession(s);
         setNotes(s.session_notes ?? "");
-        return Promise.all([fetchMembers(s.campaign_id), fetchVotes(s.id)]);
+        setEditForm({ title: s.title ?? "", description: s.description ?? "" });
+        return Promise.all([fetchMembers(s.campaign_id), fetchVotes(s.id), fetchMyNote(s.id)]);
       })
-      .then(([m, v]) => {
+      .then(([m, v, note]) => {
         setMembers(m);
         setVotes(v);
+        setMyNote(note);
+        setMyNoteInput(note?.content ?? "");
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -113,6 +134,55 @@ export default function SessionDetail() {
       setActionError(e.message);
     } finally {
       setSavingNotes(false);
+    }
+  };
+
+  const handleSaveSession = async (e) => {
+    e.preventDefault();
+    setSavingSession(true);
+    try {
+      const updated = await updateSession(id, {
+        title: editForm.title || null,
+        description: editForm.description || null,
+      });
+      setSession(updated);
+      setEditingSession(false);
+    } catch (e) {
+      setActionError(e.message);
+    } finally {
+      setSavingSession(false);
+    }
+  };
+
+  const handleReschedule = async (e) => {
+    e.preventDefault();
+    if (!rescheduleTime) return;
+    setSavingTime(true);
+    try {
+      const updated = await updateSession(id, {
+        reschedule_time: new Date(rescheduleTime).toISOString(),
+      });
+      setSession(updated);
+      setEditingTime(false);
+      setRescheduleTime("");
+    } catch (e) {
+      setActionError(e.message);
+    } finally {
+      setSavingTime(false);
+    }
+  };
+
+  const handleSaveMyNote = async (e) => {
+    e.preventDefault();
+    setSavingMyNote(true);
+    try {
+      const saved = await upsertMyNote(id, myNoteInput);
+      setMyNote(saved);
+      setEditingMyNote(false);
+    } catch (e) {
+      setActionError(e.message);
+    } finally {
+      setSavingMyNote(false);
     }
   };
 
@@ -164,50 +234,100 @@ export default function SessionDetail() {
 
         {/* Session header card */}
         <section className="rounded-xl border border-gray-800 bg-gray-900 p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex-1">
-              <h2 className="text-xl font-bold">{session.title ?? "Untitled Session"}</h2>
-              {session.description && (
-                <p className="mt-2 text-sm text-gray-300">{session.description}</p>
-              )}
-            </div>
-            <div className="flex flex-col items-end gap-2 shrink-0">
-              <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASSES[session.status]}`}>
-                {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
-              </span>
-              <span className="rounded-full bg-gray-800 px-2.5 py-0.5 text-xs text-gray-400">
-                {MODE_LABELS[session.scheduling_mode]}
-              </span>
-            </div>
-          </div>
+          {editingSession ? (
+            <form onSubmit={handleSaveSession} className="space-y-3">
+              <input
+                placeholder="Session title (optional)"
+                value={editForm.title}
+                onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
+                className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <textarea
+                placeholder="Description (optional)"
+                rows={2}
+                value={editForm.description}
+                onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              />
+              <div className="flex gap-2 justify-end">
+                <button type="button" onClick={() => setEditingSession(false)} className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm hover:border-gray-500 transition">Cancel</button>
+                <button type="submit" disabled={savingSession} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition">{savingSession ? "Saving…" : "Save"}</button>
+              </div>
+            </form>
+          ) : (
+            <>
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold">{session.title ?? "Untitled Session"}</h2>
+                  {session.description && (
+                    <p className="mt-2 text-sm text-gray-300">{session.description}</p>
+                  )}
+                </div>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASSES[session.status]}`}>
+                    {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
+                  </span>
+                  <span className="rounded-full bg-gray-800 px-2.5 py-0.5 text-xs text-gray-400">
+                    {MODE_LABELS[session.scheduling_mode]}
+                  </span>
+                </div>
+              </div>
 
-          {/* Confirmed time */}
-          {session.confirmed_time && (
-            <p className="mt-4 text-sm text-green-300 font-medium">
-              {isConfirmed ? "Confirmed:" : "Tentative:"} {fmt(session.confirmed_time)}
-            </p>
-          )}
+              {/* Confirmed time */}
+              {session.confirmed_time && (
+                <p className="mt-4 text-sm text-green-300 font-medium">
+                  {isConfirmed ? "Confirmed:" : "Tentative:"} {fmt(session.confirmed_time)}
+                </p>
+              )}
 
-          {/* GM actions */}
-          {isGm && (
-            <div className="mt-4 flex gap-2 flex-wrap">
-              {isProposed && isTentative && (
-                <button
-                  onClick={() => handleConfirm(null)}
-                  className="rounded-lg bg-green-700 px-3 py-1.5 text-sm font-medium hover:bg-green-600 transition"
-                >
-                  Confirm Session
-                </button>
+              {/* Reschedule form (confirmed sessions) */}
+              {isGm && isConfirmed && (
+                <div className="mt-3">
+                  {editingTime ? (
+                    <form onSubmit={handleReschedule} className="flex items-center gap-2">
+                      <input
+                        type="datetime-local"
+                        value={rescheduleTime}
+                        onChange={(e) => setRescheduleTime(e.target.value)}
+                        className="rounded-lg bg-gray-800 px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                      <button type="submit" disabled={savingTime} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium hover:bg-indigo-500 disabled:opacity-50 transition">{savingTime ? "…" : "Reschedule"}</button>
+                      <button type="button" onClick={() => setEditingTime(false)} className="text-xs text-gray-500 hover:text-gray-300 transition">Cancel</button>
+                    </form>
+                  ) : (
+                    <button onClick={() => setEditingTime(true)} className="text-xs text-indigo-400 hover:text-indigo-300 transition">Reschedule</button>
+                  )}
+                </div>
               )}
-              {isProposed && (
-                <button
-                  onClick={handleCancel}
-                  className="rounded-lg border border-red-900 px-3 py-1.5 text-sm text-red-400 hover:border-red-700 transition"
-                >
-                  Cancel Session
-                </button>
+
+              {/* GM actions */}
+              {isGm && (
+                <div className="mt-4 flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => setEditingSession(true)}
+                    className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm hover:border-gray-500 transition"
+                  >
+                    Edit
+                  </button>
+                  {isProposed && isTentative && (
+                    <button
+                      onClick={() => handleConfirm(null)}
+                      className="rounded-lg bg-green-700 px-3 py-1.5 text-sm font-medium hover:bg-green-600 transition"
+                    >
+                      Confirm Session
+                    </button>
+                  )}
+                  {isProposed && (
+                    <button
+                      onClick={handleCancel}
+                      className="rounded-lg border border-red-900 px-3 py-1.5 text-sm text-red-400 hover:border-red-700 transition"
+                    >
+                      Cancel Session
+                    </button>
+                  )}
+                </div>
               )}
-            </div>
+            </>
           )}
         </section>
 
@@ -318,6 +438,53 @@ export default function SessionDetail() {
             <p className="text-sm text-gray-300 whitespace-pre-wrap">{session.session_notes}</p>
           ) : (
             <p className="text-sm text-gray-600">No notes yet.</p>
+          )}
+        </section>
+
+        {/* Per-user private note */}
+        <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-medium text-gray-400">My Notes (private)</h3>
+            {!editingMyNote && (
+              <button
+                onClick={() => setEditingMyNote(true)}
+                className="text-xs text-indigo-400 hover:text-indigo-300 transition"
+              >
+                {myNote ? "Edit" : "Add note"}
+              </button>
+            )}
+          </div>
+
+          {editingMyNote ? (
+            <form onSubmit={handleSaveMyNote} className="space-y-2">
+              <textarea
+                rows={4}
+                value={myNoteInput}
+                onChange={(e) => setMyNoteInput(e.target.value)}
+                placeholder="Your private notes for this session…"
+                className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              />
+              <div className="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setEditingMyNote(false); setMyNoteInput(myNote?.content ?? ""); }}
+                  className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs hover:border-gray-500 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingMyNote}
+                  className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
+                >
+                  {savingMyNote ? "Saving…" : "Save"}
+                </button>
+              </div>
+            </form>
+          ) : myNote?.content ? (
+            <p className="text-sm text-gray-300 whitespace-pre-wrap">{myNote.content}</p>
+          ) : (
+            <p className="text-sm text-gray-600">No private notes yet.</p>
           )}
         </section>
       </main>

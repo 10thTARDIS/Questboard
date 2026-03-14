@@ -10,7 +10,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime, Enum as SAEnum, ForeignKey, Text, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -36,6 +36,10 @@ class Campaign(Base):
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     discord_webhook_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     invite_code: Mapped[str | None] = mapped_column(Text, unique=True, nullable=True)
+    timezone: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reminder_offsets_minutes: Mapped[list[int] | None] = mapped_column(
+        JSONB(astext_type=Text()), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
@@ -71,6 +75,7 @@ class CampaignMember(Base):
     role: Mapped[MemberRole] = mapped_column(
         SAEnum(MemberRole, name="memberrole"), nullable=False
     )
+    character_name: Mapped[str | None] = mapped_column(Text, nullable=True)
     joined_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
