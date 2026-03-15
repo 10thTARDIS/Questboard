@@ -163,6 +163,8 @@ async def list_members(
             avatar_url=row.User.avatar_url,
             role=row.CampaignMember.role,
             character_name=row.CampaignMember.character_name,
+            character_sheet_url=row.CampaignMember.character_sheet_url,
+            character_sheet_notes=row.CampaignMember.character_sheet_notes,
             joined_at=row.CampaignMember.joined_at,
         )
         for row in result.all()
