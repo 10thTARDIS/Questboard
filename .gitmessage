@@ -1,0 +1,18 @@
+# <type>(<scope>): <short summary>  ← 72 chars max, imperative mood
+#
+# Types:  feat | fix | docs | style | refactor | perf | test | chore | ci
+# Scope:  optional, e.g. auth | sessions | bot | milestones | admin | frontend
+#
+# Body (optional) — wrap at 72 chars, explain WHY not WHAT:
+#
+#
+# Footer (optional):
+#   BREAKING CHANGE: <description>
+#   Closes #<issue>
+#
+# ─────────────────────────────────────────────────────────────────────
+# CHANGELOG reminder:
+#   Before committing a user-facing change, add a line to CHANGELOG.md
+#   under the [Unreleased] section using one of:
+#     ### Added | Changed | Deprecated | Removed | Fixed | Security
+# ─────────────────────────────────────────────────────────────────────
