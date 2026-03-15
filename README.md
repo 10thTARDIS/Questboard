@@ -1,19 +1,32 @@
 # Quest Board
 
-A self-hosted TTRPG session scheduling tool. The GM proposes time slots, players vote, and the group gets reminded via Discord before every session.  This was created due to the apparently-imminent shutdown of RollRota; the SSL certificate for the site has not been renewed after being expired for a month, no new features have been added in a very very long time, and the developers are no longer active in their Discord.
+A self-hosted TTRPG session scheduling tool. The GM proposes time slots, players vote on availability, and the group gets notified via Discord before every session.
 
 ### AI Usage Disclaimer
 
-This project has been created with the assistance of Claude Code, which is an AI coding tool, and may contain errors or vulnerabilities.  Review the code before running it to ensure you are comfortable with the risks.
+This project has been created with the assistance of Claude Code, which is an AI coding tool, and may contain errors or vulnerabilities. Review the code before running it to ensure you are comfortable with the risks.
 
 ## Features
 
 - **OIDC authentication** — works with Authentik, Keycloak, Google, or any compliant provider; no passwords stored
-- **Three scheduling modes** — vote (2–5 proposed slots), direct (auto-confirmed), tentative (pending GM confirmation)
-- **Voting grid** — yes/maybe/no availability, scored and highlighted in real time
-- **Discord notifications** — confirmation and 7-day/24-hour/1-hour reminders via webhook
+- **Three scheduling modes** — vote (2–5 proposed slots with player voting), direct (auto-confirmed), tentative (pending GM confirmation)
+- **Voting grid** — yes/maybe/no availability per slot, scored and highlighted in real time
+- **Vote auto-close** — automatically confirm the top-voted slot after a configurable number of hours
+- **Customizable reminders** — up to three reminders per campaign with configurable offsets (minutes, hours, or days before the session)
+- **Discord notifications** — confirmation + timed reminders via per-campaign or global webhook; Discord bot integration for reaction-based voting (v2)
+- **Calendar exports** — `.ics` download, Apple Calendar (`webcal://`), and Google Calendar deep-links on confirmed sessions
+- **Session notes** — per-user private notes and GM public notes per session; public notes appear in all players' campaign journals
+- **Campaign journal** — aggregated view of all sessions with notes, ordered chronologically
+- **Attendance tracking** — GM marks who attended on completed sessions
+- **Campaign milestones** — GM-managed milestone log (level-ups, major events) with optional session links and dates
+- **Session transcripts** — recording URL, transcript, and AI-generated summary surfaced in session detail (populated by the Discord bot)
 - **Invite-code gating** — optional `INVITE_CODE` env var controls who can register
-- **Per-campaign webhooks** — each campaign can have its own Discord channel
+- **User profiles** — display name override and timezone selector
+- **Character names** — per-campaign character name set by each player
+- **Connected accounts** — link Discord and Matrix IDs to your profile for bot integration
+- **Admin panel** — user list with last-login, campaign memberships, and attendance stats; grant/revoke admin role; SMTP and webhook configuration
+- **Dark / light theme toggle** — dark by default, preference stored in the browser
+- **Next-session countdown** — days/hours/minutes until the next confirmed session on each campaign card
 
 ---
 
@@ -22,7 +35,7 @@ This project has been created with the assistance of Claude Code, which is an AI
 - [Docker](https://docs.docker.com/get-docker/) 24+
 - [Docker Compose](https://docs.docker.com/compose/) v2 plugin
 - An OIDC provider (Authentik, Keycloak, Google, etc.) with a configured application
-- (Optional) A Discord webhook URL for notifications
+- (Optional) A Discord webhook URL or Discord bot for notifications
 
 ---
 
@@ -73,6 +86,8 @@ docker compose exec backend alembic upgrade head
 ### 4. Sign in
 
 Navigate to http://localhost:5173 and click **Sign in with SSO**. If `INVITE_CODE` is set in your `.env`, enter it before signing in to register a new account.
+
+The first user to register is automatically granted admin access.
 
 ---
 
@@ -137,6 +152,8 @@ See `.env.example` for the full list with descriptions. Key variables:
 | `OIDC_CLIENT_SECRET` | Yes | — | OIDC client secret |
 | `OIDC_REDIRECT_URI` | Yes | — | Must match redirect URI in your provider |
 | `DEFAULT_DISCORD_WEBHOOK_URL` | No | `""` | Fallback webhook if campaign has none |
+| `QUESTBOARD_BOT_URL` | No | `""` | URL of the Discord bot server (e.g. `http://questboard-bot:8080`); enables bot notifications |
+| `BOT_API_KEY` | No | `""` | Shared secret for Quest Board → bot calls; must match the bot's `BOT_API_KEY` |
 | `CELERY_BROKER_URL` | No | `redis://redis:6379/1` | Celery message broker |
 | `CELERY_RESULT_BACKEND` | No | `redis://redis:6379/2` | Celery result storage |
 
@@ -159,15 +176,29 @@ Any compliant OIDC provider works. Use the provider's `.well-known/openid-config
 
 ## Discord Notifications
 
+### Webhook (no bot required)
+
 1. In your Discord server, go to **Channel Settings → Integrations → Webhooks**
 2. Create a new webhook and copy the URL
 3. Set it as `DEFAULT_DISCORD_WEBHOOK_URL` in `.env` for a global fallback, or paste it into a campaign's settings for per-campaign routing
 
-Reminders are sent at:
+Reminder timing is configurable per campaign (up to 3 reminders with value + unit). Defaults:
 - Session confirmed → immediate notification
 - 7 days before the session
 - 24 hours before the session
 - 1 hour before the session
+
+### Discord Bot (optional, v2)
+
+The Discord bot enables reaction-based voting, automatic attendance tracking, and session recording/transcription. To connect a bot:
+
+1. Deploy the [questboard-bot](https://github.com/10thTARDIS/questboard-bot) service
+2. Set `QUESTBOARD_BOT_URL` to the bot's HTTP server URL
+3. Generate a shared `BOT_API_KEY` (`openssl rand -hex 32`) and set it in both `.env` files
+4. In the admin panel (**Admin → Bot Settings**), paste the Discord bot token and optionally configure Whisper/LLM endpoints for session transcription
+5. Generate a Bot API Key in the admin panel — this is the key the bot uses to call Quest Board's `/api/bot/` endpoints
+6. In each campaign's settings, enter the Discord **Server ID** (Guild ID) and **Notification Channel ID** to enable bot notifications for that campaign
+7. Players link their Discord account in **Profile → Connected Accounts** so the bot can match Discord reactions to Questboard users
 
 ---
 

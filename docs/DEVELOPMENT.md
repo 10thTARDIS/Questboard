@@ -244,9 +244,10 @@ There is no global state library. State is managed with React's `useState` and `
 
 Each resource has a dedicated file in `src/api/`:
 
-- `auth.js` — `/api/me`
-- `campaigns.js` — campaign CRUD, members, invite codes
-- `sessions.js` — sessions, time slots, votes
+- `auth.js` — `/api/me`, `PATCH /api/me`
+- `campaigns.js` — campaign CRUD, members, invite codes, milestones, notes
+- `sessions.js` — sessions, time slots, votes, attendance, calendar
+- `users.js` — platform links (`/api/me/platform-links`)
 
 All files use a private `request()` helper that:
 - Sends credentials (the cookie) with every request
@@ -264,9 +265,12 @@ Tailwind CSS (v3) with JIT mode. All classes are applied directly in JSX — no 
 ### Route structure
 
 ```
-/login               → Login.jsx         (public)
-/dashboard           → Dashboard.jsx     (protected)
+/login               → Login.jsx          (public)
+/dashboard           → Dashboard.jsx      (protected)
+/profile             → Profile.jsx        (protected)
+/admin               → Admin.jsx          (protected, admin only)
 /campaigns/:id       → CampaignDetail.jsx (protected)
+/campaigns/:id/notes → CampaignNotes.jsx  (protected)
 /sessions/:id        → SessionDetail.jsx  (protected)
 *                    → redirect to /dashboard
 ```
