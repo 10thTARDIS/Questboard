@@ -121,6 +121,52 @@ Matrix parity. Matrix voice recording is a long-term research item.
 
 ## UX / Frontend
 
+### Milestone Graphical Indicators
+
+**Priority: 3**
+
+**Description:**
+Each milestone on the campaign timeline should display a small icon that
+visually communicates its nature (e.g. a sword for combat, a map pin for
+location change, a star for level-up, a skull for character death). Currently
+milestones use a plain dot on the timeline.
+
+**How to implement:**
+1. Add an optional `icon` field (Text, nullable) to `milestones` — stores a
+   short key like `"levelup"`, `"location"`, `"death"`, `"item"`, `"event"`.
+2. Add a new Alembic migration for the column.
+3. In the milestone create/edit form, add an icon picker (a row of small
+   buttons with the icon rendered in each).
+4. In the timeline, replace the plain dot with the selected icon rendered as
+   an SVG or emoji inside the circle node.
+5. Fall back to the current plain dot when `icon` is null.
+
+**Dependencies:** None — purely additive.
+
+---
+
+### Copy Cancelled Session to Existing Session
+
+**Priority: 3**
+
+**Description:**
+When a session is cancelled, its title, description, and notes may still be
+useful. The "Reuse as new session" button (already implemented in v0.3.2)
+handles the create-new case. This enhancement adds the ability to copy the
+cancelled session's GM public notes to an existing session instead.
+
+**How to implement:**
+1. In the cancelled session row on CampaignDetail, add a "Merge notes into…"
+   dropdown (sessions excluding cancelled/the current one).
+2. On confirm, `PATCH /api/sessions/{target_id}/notes/gm` appending the
+   cancelled session's GM public note to the target's (or replacing if blank).
+3. Alternatively: show a modal with a text area pre-filled with the cancelled
+   session's content, let the GM edit, then POST to the target session's notes.
+
+**Dependencies:** None — uses existing session notes endpoints.
+
+---
+
 ### Shareable Campaign Analytics Link
 
 **Priority: 3**
