@@ -106,19 +106,19 @@ export default function CampaignNotes() {
                   </div>
                 </div>
 
-                {entry.my_note && (
-                  <div className="mb-3">
-                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide mb-1">
+                {entry.my_notes?.length > 0 && (
+                  <div className="mb-3 space-y-3">
+                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
                       My Notes
                     </p>
-                    <p className="text-sm text-gray-300 whitespace-pre-wrap">
-                      {entry.my_note}
-                    </p>
+                    {entry.my_notes.map((note, i) => (
+                      <p key={i} className="text-sm text-gray-300 whitespace-pre-wrap">{note}</p>
+                    ))}
                   </div>
                 )}
 
                 {entry.gm_public_note && (
-                  <div className={entry.my_note ? "mt-4 pt-4 border-t border-gray-800" : ""}>
+                  <div className={entry.my_notes?.length > 0 ? "mt-4 pt-4 border-t border-gray-800" : ""}>
                     <p className="text-xs text-amber-500 font-medium uppercase tracking-wide mb-1">
                       GM Notes
                     </p>

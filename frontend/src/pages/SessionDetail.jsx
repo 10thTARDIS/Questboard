@@ -22,7 +22,7 @@ import {
   cancelSession,
   confirmSession,
   fetchAttendance,
-  fetchMyNote,
+  fetchMyNotes,
   fetchSession,
   fetchVotes,
   setAttendance,
@@ -95,12 +95,14 @@ export default function SessionDetail() {
   const [rescheduleTime, setRescheduleTime] = useState("");
   const [savingTime, setSavingTime] = useState(false);
 
-  // Per-user private note
-  const [myNote, setMyNote] = useState(null);
-  const [editingMyNote, setEditingMyNote] = useState(false);
-  const [myNoteInput, setMyNoteInput] = useState("");
-  const [myNoteVisibility, setMyNoteVisibility] = useState("private");
-  const [savingMyNote, setSavingMyNote] = useState(false);
+  // Per-user notes (one private, one public for GMs)
+  const [myNotes, setMyNotes] = useState([]);
+  const [editingPrivate, setEditingPrivate] = useState(false);
+  const [privateInput, setPrivateInput] = useState("");
+  const [savingPrivate, setSavingPrivate] = useState(false);
+  const [editingPublic, setEditingPublic] = useState(false);
+  const [publicInput, setPublicInput] = useState("");
+  const [savingPublic, setSavingPublic] = useState(false);
 
   // Attendance (completed sessions, GM only)
   const [attendance, setAttendance] = useState([]);
@@ -114,14 +116,16 @@ export default function SessionDetail() {
         setSession(s);
         setNotes(s.session_notes ?? "");
         setEditForm({ title: s.title ?? "", description: s.description ?? "" });
-        return Promise.all([fetchMembers(s.campaign_id), fetchVotes(s.id), fetchMyNote(s.id)]);
+        return Promise.all([fetchMembers(s.campaign_id), fetchVotes(s.id), fetchMyNotes(s.id)]);
       })
-      .then(([m, v, note]) => {
+      .then(([m, v, notes]) => {
         setMembers(m);
         setVotes(v);
-        setMyNote(note);
-        setMyNoteInput(note?.content ?? "");
-        setMyNoteVisibility(note?.visibility ?? "private");
+        setMyNotes(notes ?? []);
+        const priv = (notes ?? []).find((n) => n.visibility === "private");
+        const pub = (notes ?? []).find((n) => n.visibility === "public");
+        setPrivateInput(priv?.content ?? "");
+        setPublicInput(pub?.content ?? "");
         return fetchAttendance(id).catch(() => []);
       })
       .then((att) => {
@@ -202,17 +206,19 @@ export default function SessionDetail() {
     }
   };
 
-  const handleSaveMyNote = async (e) => {
-    e.preventDefault();
-    setSavingMyNote(true);
+  const handleSaveNote = async (visibility, content, setSaving, setEditing) => {
+    setSaving(true);
     try {
-      const saved = await upsertMyNote(id, myNoteInput, myNoteVisibility);
-      setMyNote(saved);
-      setEditingMyNote(false);
+      const saved = await upsertMyNote(id, content, visibility);
+      setMyNotes((prev) => {
+        const next = prev.filter((n) => n.visibility !== visibility);
+        return [...next, saved];
+      });
+      setEditing(false);
     } catch (e) {
       setActionError(e.message);
     } finally {
-      setSavingMyNote(false);
+      setSaving(false);
     }
   };
 
@@ -507,94 +513,119 @@ export default function SessionDetail() {
           )}
         </section>
 
-        {/* Per-user note */}
-        <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h3 className="text-sm font-medium text-gray-400">My Notes</h3>
-              {myNote && (
-                <span className={`text-xs rounded-full px-2 py-0.5 ${
-                  myNote.visibility === "public"
-                    ? "bg-amber-900/50 text-amber-300"
-                    : "bg-gray-800 text-gray-500"
-                }`}>
-                  {myNote.visibility === "public" ? "Public" : "Private"}
-                </span>
-              )}
-            </div>
-            {!editingMyNote && (
-              <button
-                onClick={() => setEditingMyNote(true)}
-                className="text-xs text-indigo-400 hover:text-indigo-300 transition"
-              >
-                {myNote ? "Edit" : "Add note"}
-              </button>
-            )}
-          </div>
-
-          {editingMyNote ? (
-            <form onSubmit={handleSaveMyNote} className="space-y-2">
-              <textarea
-                rows={4}
-                value={myNoteInput}
-                onChange={(e) => setMyNoteInput(e.target.value)}
-                placeholder="Your notes for this session…"
-                className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-              />
-              {isGm && (
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-gray-500">Visibility:</span>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="visibility"
-                      value="private"
-                      checked={myNoteVisibility === "private"}
-                      onChange={() => setMyNoteVisibility("private")}
-                      className="accent-indigo-500"
-                    />
-                    <span className="text-xs text-gray-400">Private</span>
-                  </label>
-                  <label className="flex items-center gap-1.5 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="visibility"
-                      value="public"
-                      checked={myNoteVisibility === "public"}
-                      onChange={() => setMyNoteVisibility("public")}
-                      className="accent-amber-500"
-                    />
-                    <span className="text-xs text-amber-400">Public (shared with players)</span>
-                  </label>
-                </div>
-              )}
-              <div className="flex gap-2 justify-end">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingMyNote(false);
-                    setMyNoteInput(myNote?.content ?? "");
-                    setMyNoteVisibility(myNote?.visibility ?? "private");
-                  }}
-                  className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs hover:border-gray-500 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingMyNote}
-                  className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
-                >
-                  {savingMyNote ? "Saving…" : "Save"}
-                </button>
+        {/* Per-user notes — private panel (all users) */}
+        {(() => {
+          const privateNote = myNotes.find((n) => n.visibility === "private");
+          return (
+            <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-gray-400">My Notes
+                  <span className="ml-2 text-xs rounded-full bg-gray-800 text-gray-500 px-2 py-0.5">Private</span>
+                </h3>
+                {!editingPrivate && (
+                  <button
+                    onClick={() => setEditingPrivate(true)}
+                    className="text-xs text-indigo-400 hover:text-indigo-300 transition"
+                  >
+                    {privateNote ? "Edit" : "Add note"}
+                  </button>
+                )}
               </div>
-            </form>
-          ) : myNote?.content ? (
-            <p className="text-sm text-gray-300 whitespace-pre-wrap">{myNote.content}</p>
-          ) : (
-            <p className="text-sm text-gray-600">No notes yet.</p>
-          )}
-        </section>
+              {editingPrivate ? (
+                <form
+                  onSubmit={(e) => { e.preventDefault(); handleSaveNote("private", privateInput, setSavingPrivate, setEditingPrivate); }}
+                  className="space-y-2"
+                >
+                  <textarea
+                    rows={4}
+                    autoFocus
+                    value={privateInput}
+                    onChange={(e) => setPrivateInput(e.target.value)}
+                    placeholder="Your private notes for this session…"
+                    className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => { setEditingPrivate(false); setPrivateInput(privateNote?.content ?? ""); }}
+                      className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs hover:border-gray-500 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingPrivate}
+                      className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
+                    >
+                      {savingPrivate ? "Saving…" : "Save"}
+                    </button>
+                  </div>
+                </form>
+              ) : privateNote?.content ? (
+                <p className="text-sm text-gray-300 whitespace-pre-wrap">{privateNote.content}</p>
+              ) : (
+                <p className="text-sm text-gray-600">No private notes yet.</p>
+              )}
+            </section>
+          );
+        })()}
+
+        {/* Public note panel — GM only */}
+        {isGm && (() => {
+          const publicNote = myNotes.find((n) => n.visibility === "public");
+          return (
+            <section className="rounded-xl border border-amber-900/40 bg-gray-900 p-5">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-gray-400">GM Notes
+                  <span className="ml-2 text-xs rounded-full bg-amber-900/50 text-amber-300 px-2 py-0.5">Public — shared with players</span>
+                </h3>
+                {!editingPublic && (
+                  <button
+                    onClick={() => setEditingPublic(true)}
+                    className="text-xs text-indigo-400 hover:text-indigo-300 transition"
+                  >
+                    {publicNote ? "Edit" : "Add note"}
+                  </button>
+                )}
+              </div>
+              {editingPublic ? (
+                <form
+                  onSubmit={(e) => { e.preventDefault(); handleSaveNote("public", publicInput, setSavingPublic, setEditingPublic); }}
+                  className="space-y-2"
+                >
+                  <textarea
+                    rows={4}
+                    autoFocus
+                    value={publicInput}
+                    onChange={(e) => setPublicInput(e.target.value)}
+                    placeholder="Notes to share with all players in the campaign journal…"
+                    className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  />
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => { setEditingPublic(false); setPublicInput(publicNote?.content ?? ""); }}
+                      className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs hover:border-gray-500 transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={savingPublic}
+                      className="rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium hover:bg-amber-500 disabled:opacity-50 transition"
+                    >
+                      {savingPublic ? "Saving…" : "Save"}
+                    </button>
+                  </div>
+                </form>
+              ) : publicNote?.content ? (
+                <p className="text-sm text-gray-300 whitespace-pre-wrap">{publicNote.content}</p>
+              ) : (
+                <p className="text-sm text-gray-600">No public notes yet.</p>
+              )}
+            </section>
+          );
+        })()}
 
         {/* Attendance — completed sessions, GM view */}
         {session.status === "completed" && isGm && (

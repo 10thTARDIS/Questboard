@@ -60,7 +60,10 @@ class SessionNote(Base):
     )
 
     __table_args__ = (
-        UniqueConstraint("session_id", "user_id", name="uq_session_notes_session_user"),
+        UniqueConstraint(
+            "session_id", "user_id", "visibility",
+            name="uq_session_notes_session_user_visibility",
+        ),
     )
 
     # ── Relationships ──────────────────────────────────────────────────────────

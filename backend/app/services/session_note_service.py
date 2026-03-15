@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.models.campaign import CampaignMember, MemberRole
 from app.models.session import Session, SessionStatus
@@ -20,11 +19,17 @@ async def upsert_note(
     content: str,
     visibility: NoteVisibility = NoteVisibility.private,
 ) -> SessionNote:
-    """Create or update the note for this (session, user) pair."""
+    """Create or update the note for this (session, user, visibility) triplet.
+
+    Each user may have at most one private note and one public note per
+    session.  Upserting with visibility='private' never touches their public
+    note, and vice-versa.
+    """
     result = await db.execute(
         select(SessionNote).where(
             SessionNote.session_id == session_id,
             SessionNote.user_id == user_id,
+            SessionNote.visibility == visibility,
         )
     )
     note = result.scalar_one_or_none()
@@ -38,26 +43,25 @@ async def upsert_note(
         db.add(note)
     else:
         note.content = content
-        note.visibility = visibility
         note.updated_at = datetime.now(timezone.utc)
     await db.commit()
     await db.refresh(note)
     return note
 
 
-async def get_note(
+async def get_notes(
     db: AsyncSession,
     session_id: uuid.UUID,
     user_id: uuid.UUID,
-) -> SessionNote | None:
-    """Return the note for this (session, user) pair, or None."""
+) -> list[SessionNote]:
+    """Return all notes (private and/or public) for this (session, user) pair."""
     result = await db.execute(
         select(SessionNote).where(
             SessionNote.session_id == session_id,
             SessionNote.user_id == user_id,
         )
     )
-    return result.scalar_one_or_none()
+    return list(result.scalars().all())
 
 
 async def get_campaign_notes(
@@ -68,8 +72,8 @@ async def get_campaign_notes(
     """Return an aggregated journal for a user across all sessions in a campaign.
 
     Each entry contains:
-      - The user's own note for that session (any visibility).
-      - The GM's public note for that session (if one exists and user isn't the GM).
+      - All of the user's own notes for that session (private + public).
+      - The GM's public note for that session (if the user is not the GM).
 
     Sessions are ordered by confirmed_time ascending (chronological journal).
     Sessions with no notes at all are omitted.
@@ -99,42 +103,42 @@ async def get_campaign_notes(
     )
     gm_id: uuid.UUID | None = gm_result.scalar_one_or_none()
 
-    # Fetch the current user's notes for all sessions in this campaign
+    # Fetch ALL of the current user's notes for sessions in this campaign
     my_notes_result = await db.execute(
         select(SessionNote).where(
             SessionNote.session_id.in_(session_ids),
             SessionNote.user_id == user_id,
         )
     )
-    my_notes: dict[uuid.UUID, SessionNote] = {
-        n.session_id: n for n in my_notes_result.scalars().all()
-    }
+    # Group by session_id — a user can now have up to 2 notes per session
+    my_notes_by_session: dict[uuid.UUID, list[SessionNote]] = {}
+    for n in my_notes_result.scalars().all():
+        my_notes_by_session.setdefault(n.session_id, []).append(n)
 
     # Fetch the GM's public notes for all sessions (if user is not the GM)
     gm_public_notes: dict[uuid.UUID, SessionNote] = {}
     if gm_id and gm_id != user_id:
-        gm_result = await db.execute(
+        gm_result2 = await db.execute(
             select(SessionNote).where(
                 SessionNote.session_id.in_(session_ids),
                 SessionNote.user_id == gm_id,
                 SessionNote.visibility == NoteVisibility.public,
             )
         )
-        gm_public_notes = {n.session_id: n for n in gm_result.scalars().all()}
+        gm_public_notes = {n.session_id: n for n in gm_result2.scalars().all()}
 
     entries: list[CampaignNoteEntry] = []
     for session in sessions:
-        my_note = my_notes.get(session.id)
+        my_notes = my_notes_by_session.get(session.id, [])
         gm_note = gm_public_notes.get(session.id)
-        # Only include sessions where there's at least one note to show
-        if not my_note and not gm_note:
+        if not my_notes and not gm_note:
             continue
         entries.append(
             CampaignNoteEntry(
                 session_id=session.id,
                 session_title=session.title,
                 confirmed_time=session.confirmed_time,
-                my_note=my_note.content if my_note else None,
+                my_notes=[n.content for n in sorted(my_notes, key=lambda n: n.created_at)],
                 gm_public_note=gm_note.content if gm_note else None,
             )
         )

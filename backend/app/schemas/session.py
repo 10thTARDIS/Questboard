@@ -135,7 +135,7 @@ class CampaignNoteEntry(BaseModel):
     session_id: uuid.UUID
     session_title: str | None
     confirmed_time: datetime | None
-    my_note: str | None
+    my_notes: list[str]  # all of the user's own notes (private + public)
     gm_public_note: str | None
 
     model_config = {"from_attributes": True}

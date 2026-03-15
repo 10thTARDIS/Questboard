@@ -128,15 +128,15 @@ async def confirm_session(
 
 # ── Per-user session notes ─────────────────────────────────────────────────────
 
-@router.get("/sessions/{session_id}/my-note", response_model=SessionNoteResponse | None)
-async def get_my_note(
+@router.get("/sessions/{session_id}/my-notes", response_model=list[SessionNoteResponse])
+async def get_my_notes(
     session_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
     _: Session = Depends(get_session_for_member),
     db: AsyncSession = Depends(get_db),
-) -> SessionNoteResponse | None:
-    """Return the current user's private note for this session, or null."""
-    return await session_note_service.get_note(db, session_id, current_user.id)
+) -> list[SessionNoteResponse]:
+    """Return all of the current user's notes for this session (private + public)."""
+    return await session_note_service.get_notes(db, session_id, current_user.id)
 
 
 @router.put("/sessions/{session_id}/my-note", response_model=SessionNoteResponse)

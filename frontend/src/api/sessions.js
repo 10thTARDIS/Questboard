@@ -83,8 +83,8 @@ export const deleteVote = (sessionId, slotId) =>
 
 // ── Session notes ──────────────────────────────────────────────────────────────
 
-export const fetchMyNote = (sessionId) =>
-  request(`/api/sessions/${sessionId}/my-note`);
+export const fetchMyNotes = (sessionId) =>
+  request(`/api/sessions/${sessionId}/my-notes`);
 
 export const upsertMyNote = (sessionId, content, visibility = "private") =>
   request(`/api/sessions/${sessionId}/my-note`, {
