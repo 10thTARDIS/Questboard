@@ -94,3 +94,23 @@ export const deleteMilestone = (campaignId, milestoneId) =>
 
 export const fetchCampaignAnalytics = (campaignId) =>
   request(`${BASE}/${campaignId}/analytics`);
+
+// ── Lore entries ───────────────────────────────────────────────────────────────
+
+export const fetchLoreEntries = (campaignId) =>
+  request(`${BASE}/${campaignId}/lore`);
+
+export const createLoreEntry = (campaignId, data) =>
+  request(`${BASE}/${campaignId}/lore`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+export const updateLoreEntry = (campaignId, entryId, data) =>
+  request(`${BASE}/${campaignId}/lore/${entryId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+
+export const deleteLoreEntry = (campaignId, entryId) =>
+  request(`${BASE}/${campaignId}/lore/${entryId}`, { method: "DELETE" });

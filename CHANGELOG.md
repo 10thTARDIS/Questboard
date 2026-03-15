@@ -13,6 +13,25 @@ _Nothing yet._
 
 ---
 
+## [0.3.2] — 2026-03-15
+
+### Added
+
+- **Campaign Wiki** — GM-editable lore entries (locations, factions, NPCs,
+  items, events, and a catch-all "other" category) attached to a campaign;
+  all members can read, only GMs can create/edit/delete.  Entries are
+  filterable by type and expand inline to show body text.  Linked from
+  CampaignDetail alongside Campaign Journal and Analytics.
+
+### Migration
+
+Run `alembic upgrade head` to apply migration `930af97f5798` which adds:
+- `lore_entries` table with `entry_type` (loretype enum), `title`, `body`,
+  `linked_session_id` (nullable FK), `created_by` (nullable FK),
+  `created_at`, `updated_at`
+
+---
+
 ## [0.3.1] — 2026-03-15
 
 ### Added
@@ -217,7 +236,8 @@ app-side foundations required for v2.0 Discord bot integration.
 
 ---
 
-[Unreleased]: https://github.com/10thTARDIS/Questboard/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/10thTARDIS/Questboard/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/10thTARDIS/Questboard/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/10thTARDIS/Questboard/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/10thTARDIS/Questboard/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/10thTARDIS/Questboard/compare/v0.2.0...v0.2.1

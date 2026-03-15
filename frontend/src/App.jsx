@@ -11,6 +11,7 @@ import Profile from "./pages/Profile.jsx";
 import Admin from "./pages/Admin.jsx";
 import CampaignNotes from "./pages/CampaignNotes.jsx";
 import CampaignAnalytics from "./pages/CampaignAnalytics.jsx";
+import CampaignLore from "./pages/CampaignLore.jsx";
 
 export default function App() {
   return (
@@ -69,6 +70,14 @@ export default function App() {
             element={
               <AuthGuard>
                 <CampaignAnalytics />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/campaigns/:id/lore"
+            element={
+              <AuthGuard>
+                <CampaignLore />
               </AuthGuard>
             }
           />

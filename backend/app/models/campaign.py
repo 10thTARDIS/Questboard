@@ -63,6 +63,9 @@ class Campaign(Base):
     milestones: Mapped[list["Milestone"]] = relationship(  # noqa: F821
         back_populates="campaign", cascade="all, delete-orphan"
     )
+    lore_entries: Mapped[list["LoreEntry"]] = relationship(  # noqa: F821
+        back_populates="campaign", cascade="all, delete-orphan"
+    )
 
 
 class CampaignMember(Base):

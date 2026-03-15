@@ -73,9 +73,12 @@ Things that still need doing:
 # Version v0.3.0
 
 ### Campaign Wiki / Lore Pages
-- GM-editable structured lore entries (locations, factions, NPCs) attached to a campaign, optionally linked to sessions
-- Bot transcripts and summaries (v2) can propose new lore entries or expansions; GM reviews and approves before they become canonical
-- Lore entries versioned so GMs can revert bot-proposed changes
+- [x] GM-editable structured lore entries (locations, factions, NPCs, items, events, other) attached to a campaign, optionally linked to sessions
+  (`lore_entries` table + migration 930af97f5798; full GM CRUD in `/campaigns/:id/lore`; Wiki link in CampaignDetail)
+- [ ] Bot transcripts and summaries (v2) can propose new lore entries or expansions; GM reviews and approves before they become canonical
+  *(deferred — see docs/ENHANCEMENTS.md)*
+- [ ] Lore entries versioned so GMs can revert bot-proposed changes
+  *(deferred — see docs/ENHANCEMENTS.md)*
 
 ### NPC Tracker
 - GM creates NPC cards with descriptions, tags, and session appearances

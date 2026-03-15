@@ -813,6 +813,12 @@ export default function CampaignDetail() {
               >
                 Analytics
               </Link>
+              <Link
+                to={`/campaigns/${id}/lore`}
+                className="text-xs text-indigo-400 hover:text-indigo-300 transition"
+              >
+                Wiki
+              </Link>
             {isGm && (
               <button
                 onClick={() => setShowNewSession((v) => !v)}

@@ -39,6 +39,57 @@ must be network-accessible from the Quest Board server.
 
 ## Bot Features
 
+### Bot-Proposed Lore Entries
+
+**Priority: 2**
+
+**Description:**
+After a session transcript is uploaded (v0.2.x bot), the bot passes the
+summary to an LLM which proposes new lore entries or expansions to existing
+ones. The GM sees a "pending proposals" queue on the Wiki page and can
+approve, edit, or discard each one before it becomes canonical.
+
+**How to implement:**
+1. Add a `proposed_by_bot` boolean and `bot_proposed_at` timestamp to
+   `lore_entries` (from v0.3.2). Proposed entries are hidden from players
+   until approved.
+2. Extend `POST /bot/sessions/{id}/transcript` to accept an optional
+   `lore_proposals` list: `[{type, title, body, linked_session_id?}]`.
+   Create `lore_entries` rows with `proposed_by_bot=true` for each.
+3. Add `POST /api/campaigns/{id}/lore/{entry_id}/approve` and
+   `DELETE /api/campaigns/{id}/lore/{entry_id}` (already exists) for the
+   GM review flow.
+4. Surface a "Pending Bot Proposals" count badge on the Wiki nav link in
+   CampaignDetail when `proposed_by_bot` entries exist.
+
+**Dependencies:** Core lore system (v0.3.2); Discord bot transcript upload
+(v0.2.x) must be stable first.
+
+---
+
+### Lore Entry Version History
+
+**Priority: 3**
+
+**Description:**
+Every time a GM saves an edit to a lore entry, the previous version is
+stored so GMs can compare and revert. Especially useful when the bot
+proposes an update to an existing entry that the GM partially accepts.
+
+**How to implement:**
+1. Add a `lore_entry_versions` table: `id`, `lore_entry_id` (FK),
+   `body` (Text), `edited_by` (FK → users), `created_at`.
+2. In the lore update endpoint, write the *current* body to
+   `lore_entry_versions` before applying the new value.
+3. Add `GET /api/campaigns/{id}/lore/{entry_id}/versions` returning the
+   version list.
+4. Add a "Version history" panel on the lore entry detail page with a
+   "Restore this version" button that POSTs the old body back.
+
+**Dependencies:** Core lore system (v0.3.2).
+
+---
+
 ### Matrix/Element Bot Parity
 
 **Priority: 4**

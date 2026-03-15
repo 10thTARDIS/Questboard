@@ -29,7 +29,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 from app.schemas.session import CampaignNoteEntry, SessionListItem
-from app.services import analytics_service, campaign_service, milestone_service, session_note_service, session_service
+from app.services import analytics_service, campaign_service, lore_service, milestone_service, session_note_service, session_service
 
 
 # ── Analytics schemas (inline) ─────────────────────────────────────────────────
@@ -55,6 +55,36 @@ class CampaignAnalyticsResponse(BaseModel):
     average_gap_days: float | None
     sessions_last_30_days: int
     members: list[MemberAnalyticsResponse]
+
+
+# ── Lore schemas (inline) ──────────────────────────────────────────────────────
+
+class LoreEntryCreate(BaseModel):
+    entry_type: str
+    title: str
+    body: str
+    linked_session_id: uuid.UUID | None = None
+
+
+class LoreEntryUpdate(BaseModel):
+    entry_type: str | None = None
+    title: str | None = None
+    body: str | None = None
+    linked_session_id: uuid.UUID | None = None
+
+
+class LoreEntryResponse(BaseModel):
+    id: uuid.UUID
+    campaign_id: uuid.UUID
+    entry_type: str
+    title: str
+    body: str
+    linked_session_id: uuid.UUID | None
+    created_by: uuid.UUID | None
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 # ── Milestone schemas (inline) ─────────────────────────────────────────────────
@@ -395,3 +425,106 @@ async def delete_milestone(
     if milestone is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
     await milestone_service.delete_milestone(db, milestone)
+
+
+# ── Lore entries ───────────────────────────────────────────────────────────────
+
+@router.get("/{campaign_id}/lore", response_model=list[LoreEntryResponse])
+async def list_lore_entries(
+    campaign_id: uuid.UUID,
+    _: User = Depends(require_campaign_member),
+    db: AsyncSession = Depends(get_db),
+) -> list[LoreEntryResponse]:
+    """Return all lore entries for a campaign (any member)."""
+    entries = await lore_service.list_lore_entries(db, campaign_id)
+    return [LoreEntryResponse.model_validate(e) for e in entries]
+
+
+@router.post(
+    "/{campaign_id}/lore",
+    response_model=LoreEntryResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_lore_entry(
+    campaign_id: uuid.UUID,
+    data: LoreEntryCreate,
+    current_user: User = Depends(require_gm),
+    db: AsyncSession = Depends(get_db),
+) -> LoreEntryResponse:
+    """Create a new lore entry (GM only)."""
+    from app.models.lore_entry import LoreType
+    try:
+        entry_type = LoreType(data.entry_type)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=f"Invalid entry_type. Must be one of: {[t.value for t in LoreType]}",
+        )
+    entry = await lore_service.create_lore_entry(
+        db,
+        campaign_id=campaign_id,
+        creator_id=current_user.id,
+        entry_type=entry_type,
+        title=data.title,
+        body=data.body,
+        linked_session_id=data.linked_session_id,
+    )
+    return LoreEntryResponse.model_validate(entry)
+
+
+@router.patch("/{campaign_id}/lore/{entry_id}", response_model=LoreEntryResponse)
+async def update_lore_entry(
+    campaign_id: uuid.UUID,
+    entry_id: uuid.UUID,
+    data: LoreEntryUpdate,
+    _: User = Depends(require_gm),
+    db: AsyncSession = Depends(get_db),
+) -> LoreEntryResponse:
+    """Update a lore entry (GM only)."""
+    from app.models.lore_entry import LoreEntry, LoreType
+    from sqlalchemy import select as sel
+    entry = await db.scalar(
+        sel(LoreEntry).where(
+            LoreEntry.id == entry_id,
+            LoreEntry.campaign_id == campaign_id,
+        )
+    )
+    if entry is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lore entry not found")
+    updates = data.model_dump(exclude_unset=True)
+    if "entry_type" in updates:
+        try:
+            updates["entry_type"] = LoreType(updates["entry_type"])
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid entry_type. Must be one of: {[t.value for t in LoreType]}",
+            )
+    if not updates:
+        return LoreEntryResponse.model_validate(entry)
+    updated = await lore_service.update_lore_entry(db, entry, updates)
+    return LoreEntryResponse.model_validate(updated)
+
+
+@router.delete(
+    "/{campaign_id}/lore/{entry_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_lore_entry(
+    campaign_id: uuid.UUID,
+    entry_id: uuid.UUID,
+    _: User = Depends(require_gm),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Delete a lore entry (GM only)."""
+    from app.models.lore_entry import LoreEntry
+    from sqlalchemy import select as sel
+    entry = await db.scalar(
+        sel(LoreEntry).where(
+            LoreEntry.id == entry_id,
+            LoreEntry.campaign_id == campaign_id,
+        )
+    )
+    if entry is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lore entry not found")
+    await lore_service.delete_lore_entry(db, entry)
