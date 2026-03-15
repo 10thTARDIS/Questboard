@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
+import NavBar from "../components/NavBar.jsx";
 import { updateMe } from "../api/auth.js";
 import { addPlatformLink, fetchPlatformLinks, removePlatformLink } from "../api/users.js";
 
@@ -133,12 +134,13 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center gap-4">
-        <Link to="/dashboard" className="text-gray-500 hover:text-white transition text-sm">
-          ← Dashboard
-        </Link>
-        <span className="text-gray-700">/</span>
-        <span className="font-semibold">Profile</span>
+      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/dashboard" className="text-gray-500 hover:text-white transition text-sm">← Dashboard</Link>
+          <span className="text-gray-700">/</span>
+          <span className="font-semibold">Profile</span>
+        </div>
+        <NavBar />
       </header>
 
       <main className="mx-auto max-w-lg px-6 py-8 space-y-6">

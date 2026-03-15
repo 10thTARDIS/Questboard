@@ -10,7 +10,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
-import { useTheme } from "../hooks/useTheme.jsx";
+import NavBar from "../components/NavBar.jsx";
 import {
   createCampaign,
   fetchCampaigns,
@@ -67,8 +67,6 @@ function SessionCountdown({ campaignId }) {
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const { theme, toggle: toggleTheme } = useTheme();
-  const displayName = user?.effective_display_name ?? user?.display_name;
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -143,30 +141,7 @@ export default function Dashboard() {
       {/* Header */}
       <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">Quest Board</h1>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-400 truncate max-w-[160px]">{displayName}</span>
-          <Link to="/profile" className="text-sm text-gray-500 hover:text-white transition">
-            Profile
-          </Link>
-          {user?.is_admin && (
-            <Link to="/admin" className="text-sm text-gray-500 hover:text-white transition">
-              Admin
-            </Link>
-          )}
-          <button
-            onClick={toggleTheme}
-            className="text-sm text-gray-500 hover:text-white transition"
-            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {theme === "dark" ? "☀" : "☾"}
-          </button>
-          <a
-            href="/auth/logout"
-            className="text-sm text-gray-500 hover:text-white transition"
-          >
-            Sign out
-          </a>
-        </div>
+        <NavBar />
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-8">

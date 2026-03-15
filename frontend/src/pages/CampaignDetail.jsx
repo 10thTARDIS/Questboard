@@ -9,6 +9,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
+import NavBar from "../components/NavBar.jsx";
 import {
   createMilestone,
   createLoreEntry,
@@ -529,12 +530,15 @@ export default function CampaignDetail() {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center gap-4">
-        <Link to="/dashboard" className="text-gray-500 hover:text-white transition text-sm">
-          ← Campaigns
-        </Link>
-        <span className="text-gray-700">/</span>
-        <span className="font-semibold">{campaign.name}</span>
+      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/dashboard" className="text-gray-500 hover:text-white transition text-sm">
+            ← Campaigns
+          </Link>
+          <span className="text-gray-700">/</span>
+          <span className="font-semibold">{campaign.name}</span>
+        </div>
+        <NavBar />
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-6">

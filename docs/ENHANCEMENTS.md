@@ -121,6 +121,21 @@ Matrix parity. Matrix voice recording is a long-term research item.
 
 ## UX / Frontend
 
+### Light Theme / Dark-Mode Toggle
+
+**Priority: 3**
+
+**Description:**
+The theme toggle button is present in the navbar and the `ThemeProvider` correctly applies/removes the `dark` class on `<html>`. However, all JSX components use hardcoded dark-mode Tailwind classes (e.g. `bg-gray-950`, `text-white`) without any `dark:` prefix variants. As a result, the toggle has no visible effect.
+
+**Implementation notes:**
+- Audit every component and page for hardcoded dark colour classes
+- Add corresponding `dark:` variants for each (e.g. `bg-white dark:bg-gray-950`)
+- Alternatively, adopt a CSS custom-property approach where design tokens switch on `[data-theme="dark"]`
+- Consider using a Tailwind plugin or `@layer base` variables to manage the two palettes
+
+---
+
 ### Milestone Graphical Indicators
 
 **Priority: 3**

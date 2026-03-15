@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { fetchCampaign, fetchCampaignAnalytics } from "../api/campaigns.js";
+import NavBar from "../components/NavBar.jsx";
 
 function pct(rate) {
   if (rate === null || rate === undefined) return "—";
@@ -60,15 +61,15 @@ export default function CampaignAnalytics() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center gap-4">
-        <Link
-          to={`/campaigns/${campaignId}`}
-          className="text-gray-500 hover:text-white transition text-sm"
-        >
-          ← {campaign?.name ?? "Campaign"}
-        </Link>
-        <span className="text-gray-700">/</span>
-        <span className="font-semibold">Analytics</span>
+      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to={`/campaigns/${campaignId}`} className="text-gray-500 hover:text-white transition text-sm">
+            ← {campaign?.name ?? "Campaign"}
+          </Link>
+          <span className="text-gray-700">/</span>
+          <span className="font-semibold">Analytics</span>
+        </div>
+        <NavBar />
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-8 space-y-8">

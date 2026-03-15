@@ -11,6 +11,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
+import NavBar from "../components/NavBar.jsx";
 import { fetchAdminUsers, setAdminStatus } from "../api/auth.js";
 import {
   fetchAdminUserDetail,
@@ -544,12 +545,15 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center gap-4">
-        <Link to="/dashboard" className="text-gray-500 hover:text-white transition text-sm">
-          ← Dashboard
-        </Link>
-        <span className="text-gray-700">/</span>
-        <span className="font-semibold">Admin</span>
+      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to="/dashboard" className="text-gray-500 hover:text-white transition text-sm">
+            ← Dashboard
+          </Link>
+          <span className="text-gray-700">/</span>
+          <span className="font-semibold">Admin</span>
+        </div>
+        <NavBar />
       </header>
 
       <main className="mx-auto max-w-4xl px-6 py-8">

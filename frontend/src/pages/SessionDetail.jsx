@@ -31,6 +31,7 @@ import {
 } from "../api/sessions.js";
 import DateTimePicker from "../components/DateTimePicker.jsx";
 import VotingGrid from "../components/VotingGrid.jsx";
+import NavBar from "../components/NavBar.jsx";
 
 const MODE_LABELS = { vote: "Vote", direct: "Direct", tentative: "Tentative" };
 const STATUS_CLASSES = {
@@ -323,15 +324,15 @@ export default function SessionDetail() {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       {/* Header */}
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center gap-4">
-        <Link
-          to={`/campaigns/${session.campaign_id}`}
-          className="text-gray-500 hover:text-white transition text-sm"
-        >
-          ← Campaign
-        </Link>
-        <span className="text-gray-700">/</span>
-        <span className="font-semibold">{session.title ?? "Untitled Session"}</span>
+      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link to={`/campaigns/${session.campaign_id}`} className="text-gray-500 hover:text-white transition text-sm">
+            ← Campaign
+          </Link>
+          <span className="text-gray-700">/</span>
+          <span className="font-semibold">{session.title ?? "Untitled Session"}</span>
+        </div>
+        <NavBar />
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-8 space-y-6">

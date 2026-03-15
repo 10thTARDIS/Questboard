@@ -15,8 +15,8 @@ async def list_milestones(db: AsyncSession, campaign_id: uuid.UUID) -> list[Mile
         select(Milestone)
         .where(Milestone.campaign_id == campaign_id)
         .order_by(
-            Milestone.milestone_date.nulls_last(),
-            Milestone.created_at,
+            Milestone.milestone_date.desc().nulls_first(),
+            Milestone.created_at.desc(),
         )
     )
     return list(result.scalars().all())

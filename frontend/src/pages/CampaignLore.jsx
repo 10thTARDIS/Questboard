@@ -6,6 +6,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
+import NavBar from "../components/NavBar.jsx";
 import {
   fetchCampaign,
   fetchMembers,
@@ -207,6 +208,7 @@ export default function CampaignLore() {
           <span className="text-gray-700">/</span>
           <span className="font-semibold">Wiki</span>
         </div>
+        <div className="flex items-center gap-3">
         {isGm && (
           <button
             onClick={() => { setShowCreate(true); setEditingId(null); }}
@@ -215,6 +217,8 @@ export default function CampaignLore() {
             + New entry
           </button>
         )}
+        <NavBar />
+        </div>
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-8 space-y-6">
