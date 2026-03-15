@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # Extract the section for this version from CHANGELOG.md.
       # Looks for the block between "## [X.Y.Z]" and the next "## [" heading.
