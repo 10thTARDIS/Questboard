@@ -27,13 +27,7 @@ Things that still need doing:
 - [x] Global notification endpoint configuration in app settings UI  (Discord webhook fallback + SMTP form in Admin → Notification Settings)  
 - [x] Admin first-user bootstrap fix  (Alembic data migration promotes earliest registered user if no admins exist; `make set-admin EMAIL=...` CLI escape hatch)  
 - [x] Reminder offsets UI  (up to 3 reminders, each with a value + unit selector of minutes/hours/days; stored as integer minutes in DB)  
-
-## Still Outstanding
-
 - [x] Add Apple Calendar link to confirmed session calendar section (Apple Calendar uses the same .ics file; add a direct webcal:// link alongside the existing .ics download)
-
-## New Items for v1 — Completed
-
 - [x] Add a time selector to the session scheduler with a proper time picker — minutes selectable in 15-minute increments (dropdown) and AM/PM selector  (DateTimePicker component replacing datetime-local in session create form and reschedule form)  
 - [x] Add calendar event downloads for confirmed sessions  (.ics file download at GET /api/sessions/{id}/calendar.ics; Google Calendar link; both shown on SessionDetail for confirmed sessions)  
 - [x] Session status auto-complete  (Celery Beat task every 5 minutes; transitions confirmed sessions to completed once confirmed_time passes)  
@@ -47,28 +41,33 @@ Things that still need doing:
 # Version 2.0
 
 ### Reaction-Based Voting via Bot
-- Users link their Discord (or Matrix) account ID in profile settings
-  (stored as `platform_links` table: user_id, platform ENUM, platform_user_id — table already created in v1 schema)
-- Profile page UI to link/unlink Discord or Matrix account
-- When a vote notification is posted, bot adds one reaction emoji per time slot
-- Bot watches for reactions from users with linked accounts and writes votes
-  back to the existing Votes API
-- Users without linked accounts see a prompt when they react
+- [x] Users link their Discord (or Matrix) account ID in profile settings
+  (`platform_links` table + Profile page "Connected Accounts" section; GET/POST/DELETE /api/me/platform-links)
+- [x] Profile page UI to link/unlink Discord or Matrix account
+- [ ] When a vote notification is posted, bot adds one reaction emoji per time slot  *(bot)*
+- [ ] Bot watches for reactions from users with linked accounts and writes votes
+  back to the existing Votes API  *(bot — PUT /api/bot/sessions/{id}/timeslots/{slot}/vote ready)*
+- [ ] Users without linked accounts see a prompt when they react  *(bot)*
 
 ### Session Recording & Transcription
-- Discord bot joins voice channel on session start (opt-in, consent required)
-- Audio sent to self-hosted OpenAI Whisper for transcription
-- Transcript passed to LLM (Ollama or API) for session summary
-- Transcript and summary stored on Session record (columns already exist in v1 schema), displayed in session detail page
-- Admin: Whisper/LLM settings — model endpoint URL and API key stored in `app_settings`
+- [ ] Discord bot joins voice channel on session start (opt-in, consent required)  *(bot)*
+- [ ] Audio sent to self-hosted OpenAI Whisper for transcription  *(bot)*
+- [ ] Transcript passed to LLM (Ollama or API) for session summary  *(bot)*
+- [x] Transcript and summary stored on Session record and displayed in SessionDetail
+  (RecordingSection component; summary + collapsible transcript + recording link)
+- [x] Admin: Whisper/LLM settings — model endpoint URL and API key stored in `app_settings`
+  (Bot Settings tab in Admin panel)
 
 ### Campaign Milestone Tracking
-- Milestones for the campaign (level up, major location changes) on the campaign page, controllable by the GM
-- Repeat-appearance NPCs (from v2 NPC Tracker) surface in the milestones feed automatically
+- [x] Milestones for the campaign (level up, major location changes) on the campaign page, controllable by the GM
+  (`milestones` table + Alembic migration; full GM create/edit/delete UI in CampaignDetail)
+- [ ] Repeat-appearance NPCs surface in the milestones feed automatically  *(v3 dependency — NPC Tracker)*
 
 ### Bot Administration
-- Admin: bot token management — store Discord bot token in `app_settings`
-- Admin: Whisper/LLM endpoint + API key configuration
+- [x] Admin: bot token management — store Discord bot token in `app_settings`  (Bot Settings tab)
+- [x] Admin: Whisper/LLM endpoint + API key configuration  (Bot Settings tab)
+- [x] Bot API key — generate/regenerate shared secret; `require_bot_auth` dependency validates `X-Bot-Key` header
+- [x] Bot API router — `/api/bot/` with 5 endpoints (upcoming sessions, linked users, vote, attendance, transcript)
 
 
 # Version 3.0
