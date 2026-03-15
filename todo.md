@@ -1,6 +1,6 @@
 Things that still need doing:
 
-# Version 1.0
+# Version v0.1.0
 
 ## Completed Items
 
@@ -38,7 +38,7 @@ Things that still need doing:
 - [x] Leave campaign: players can leave via "Leave Campaign" button on the campaign page; last GM is blocked with an error message
 
 
-# Version 2.0
+# Version v0.2.0
 
 ### Reaction-Based Voting via Bot
 - [x] Users link their Discord (or Matrix) account ID in profile settings
@@ -70,7 +70,7 @@ Things that still need doing:
 - [x] Bot API router — `/api/bot/` with 5 endpoints (upcoming sessions, linked users, vote, attendance, transcript)
 
 
-# Version 3.0
+# Version v0.3.0
 
 ### Campaign Wiki / Lore Pages
 - GM-editable structured lore entries (locations, factions, NPCs) attached to a campaign, optionally linked to sessions
