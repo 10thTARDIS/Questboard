@@ -13,6 +13,20 @@ _Nothing yet._
 
 ---
 
+## [0.3.0] — 2026-03-15
+
+### Added
+
+- **Campaign Analytics Dashboard** — `GET /api/campaigns/{id}/analytics` returns
+  session counts by status, average gap between completed sessions, sessions in
+  the last 30 days, and per-member attendance and vote-participation rates
+  computed from existing data (no new tables)
+- **`/campaigns/:id/analytics` page** — stat cards for session frequency plus a
+  member table with colour-coded attendance and vote-participation percentages;
+  linked from CampaignDetail alongside Campaign Journal
+
+---
+
 ## [0.2.1] — 2026-03-15
 
 ### Fixed
@@ -174,7 +188,8 @@ app-side foundations required for v2.0 Discord bot integration.
 
 ---
 
-[Unreleased]: https://github.com/10thTARDIS/Questboard/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/10thTARDIS/Questboard/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/10thTARDIS/Questboard/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/10thTARDIS/Questboard/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/10thTARDIS/Questboard/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/10thTARDIS/Questboard/compare/v0.1.0...v0.1.1
