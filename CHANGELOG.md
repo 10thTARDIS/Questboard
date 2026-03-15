@@ -9,11 +9,25 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+_Nothing yet._
+
+---
+
+## [0.1.1] — 2026-03-14
+
 ### Added
 - Apple Calendar (`webcal://`) link alongside the existing `.ics` download on
-  confirmed sessions
-- Dependabot configuration: weekly PRs for Python, npm, and GitHub Actions
-  dependencies
+  confirmed sessions — uses `window.location.host` so it works in any deployment
+- Dependabot configuration: weekly automated PRs for Python (pip), JavaScript
+  (npm), and GitHub Actions dependencies
+
+### Fixed
+- `release.yml`: workflow was passing the unstripped tag name (e.g. `v0.1.0`)
+  to the Python changelog extractor, causing a lookup miss; now strips the
+  leading `v` before matching against `CHANGELOG.md` headings
+- Milestone PATCH endpoint: passing only some fields (e.g. just `title`) would
+  previously clear all unmentioned nullable columns; endpoint now uses
+  `exclude_unset=True` so only explicitly provided fields are written
 
 ---
 
@@ -102,5 +116,6 @@ app-side foundations required for v2.0 Discord bot integration.
 
 ---
 
-[Unreleased]: https://github.com/10thTARDIS/Questboard/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/10thTARDIS/Questboard/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/10thTARDIS/Questboard/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/10thTARDIS/Questboard/releases/tag/v0.1.0

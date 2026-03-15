@@ -18,37 +18,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # Extract the section for this version from CHANGELOG.md
-      # Looks for the block between "## [X.Y.Z]" and the next "## [" heading
+      # Extract the section for this version from CHANGELOG.md.
+      # Looks for the block between "## [X.Y.Z]" and the next "## [" heading.
       - name: Extract changelog for this version
         id: changelog
+        env:
+          # Pass ref name into Python via env; strip leading 'v' there.
+          TAG_NAME: ${{ github.ref_name }}
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"   # strip leading 'v'
           python3 - <<'PYEOF'
           import re, os, sys
 
-          version = os.environ["VERSION"]
+          version = os.environ["TAG_NAME"].lstrip("v")   # "v0.1.1" → "0.1.1"
           with open("CHANGELOG.md") as f:
               text = f.read()
 
-          # Find the section for this version
+          # Match the section for this version up to the next "## [" heading
           pattern = rf"## \[{re.escape(version)}\][^\n]*\n(.*?)(?=\n## \[|\Z)"
           match = re.search(pattern, text, re.DOTALL)
           if not match:
-              print(f"No CHANGELOG entry found for {version}", file=sys.stderr)
-              notes = f"See [CHANGELOG.md](https://github.com/${{{{ github.repository }}}}/blob/main/CHANGELOG.md) for details."
+              print(f"WARNING: No CHANGELOG entry found for {version}", file=sys.stderr)
+              notes = "No changelog entry found for this version."
           else:
               notes = match.group(1).strip()
 
-          # Write to $GITHUB_OUTPUT using the multiline delimiter syntax
+          # Write multiline output using the required delimiter syntax
           delimiter = "EOF_NOTES"
           with open(os.environ["GITHUB_OUTPUT"], "a") as out:
               out.write(f"notes<<{delimiter}\n{notes}\n{delimiter}\n")
           PYEOF
-        env:
-          VERSION: ${{ github.ref_name }}
-          # strip 'v' prefix for the CHANGELOG lookup
-          VERSION: ${{ github.ref_name }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -57,4 +55,4 @@ jobs:
           tag_name: ${{ github.ref_name }}
           body: ${{ steps.changelog.outputs.notes }}
           draft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}  # treat v1.0.0-rc1 as pre-release
+          prerelease: ${{ contains(github.ref_name, '-') }}  # e.g. v1.0.0-rc1

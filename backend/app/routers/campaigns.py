@@ -306,13 +306,10 @@ async def update_milestone(
     )
     if milestone is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
-    updated = await milestone_service.update_milestone(
-        db, milestone,
-        title=data.title,
-        description=data.description,
-        session_id=data.session_id,
-        milestone_date=data.milestone_date,
-    )
+    updates = data.model_dump(exclude_unset=True)
+    if not updates:
+        return MilestoneResponse.model_validate(milestone)
+    updated = await milestone_service.update_milestone(db, milestone, updates)
     return MilestoneResponse.model_validate(updated)
 
 

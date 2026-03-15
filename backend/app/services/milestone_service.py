@@ -48,22 +48,17 @@ async def create_milestone(
 async def update_milestone(
     db: AsyncSession,
     milestone: Milestone,
-    title: str | None,
-    description: str | None,
-    session_id: uuid.UUID | None,
-    milestone_date: datetime | None,
+    updates: dict,
 ) -> Milestone:
-    """Update milestone fields.
+    """Apply a partial update to a milestone.
 
-    `title` is only changed when not None (it is required and cannot be cleared).
-    Nullable fields (description, session_id, milestone_date) are always written
-    so that passing None explicitly sets them to NULL.
+    Only keys present in `updates` are written — callers should build this
+    dict with `model_dump(exclude_unset=True)` so unmentioned fields are
+    never touched.  Passing a key with value `None` explicitly sets that
+    column to NULL (e.g. to unlink a session).
     """
-    if title is not None:
-        milestone.title = title
-    milestone.description = description
-    milestone.session_id = session_id
-    milestone.milestone_date = milestone_date
+    for key, value in updates.items():
+        setattr(milestone, key, value)
     await db.commit()
     await db.refresh(milestone)
     return milestone
