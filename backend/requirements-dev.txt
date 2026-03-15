@@ -3,13 +3,13 @@
 
 # ── Testing ────────────────────────────────────────────────────────────────────
 pytest==8.3.4
-pytest-asyncio==0.25.2
+pytest-asyncio==1.3.0
 httpx==0.28.1
 
 # ── Linting / formatting ───────────────────────────────────────────────────────
-ruff==0.9.1
-black==24.10.0
+ruff==0.15.6
+black==26.3.1
 
 # ── Security auditing ─────────────────────────────────────────────────────────
 # Run manually or as a pre-commit hook: pip-audit
-pip-audit==2.8.0
+pip-audit==2.10.0
