@@ -747,6 +747,12 @@ export default function CampaignDetail() {
               >
                 Campaign Journal
               </Link>
+              <Link
+                to={`/campaigns/${id}/analytics`}
+                className="text-xs text-indigo-400 hover:text-indigo-300 transition"
+              >
+                Analytics
+              </Link>
             {isGm && (
               <button
                 onClick={() => setShowNewSession((v) => !v)}

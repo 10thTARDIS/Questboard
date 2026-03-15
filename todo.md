@@ -92,8 +92,9 @@ Things that still need doing:
 - Fallback: freeform URL or key/value fields for users on other platforms
 
 ### Campaign Analytics Dashboard
-- Player attendance rates, session frequency, average session gap, vote participation rates per campaign
-- GM-facing view; optionally shareable with players
+- [x] Player attendance rates, session frequency, average session gap, vote participation rates per campaign
+  (`GET /api/campaigns/{id}/analytics`; `/campaigns/:id/analytics` page; Analytics link in CampaignDetail)
+- [x] GM-facing view; optionally shareable with players (accessible to all members)
 
 ### Matrix/Element Bot Parity
 - Same bot features (reaction voting, session recording) via Matrix protocol in addition to Discord

@@ -270,7 +270,8 @@ Tailwind CSS (v3) with JIT mode. All classes are applied directly in JSX — no 
 /profile             → Profile.jsx        (protected)
 /admin               → Admin.jsx          (protected, admin only)
 /campaigns/:id       → CampaignDetail.jsx (protected)
-/campaigns/:id/notes → CampaignNotes.jsx  (protected)
+/campaigns/:id/notes      → CampaignNotes.jsx      (protected)
+/campaigns/:id/analytics  → CampaignAnalytics.jsx  (protected)
 /sessions/:id        → SessionDetail.jsx  (protected)
 *                    → redirect to /dashboard
 ```

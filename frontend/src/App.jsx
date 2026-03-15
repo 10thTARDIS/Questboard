@@ -10,6 +10,7 @@ import SessionDetail from "./pages/SessionDetail.jsx";
 import Profile from "./pages/Profile.jsx";
 import Admin from "./pages/Admin.jsx";
 import CampaignNotes from "./pages/CampaignNotes.jsx";
+import CampaignAnalytics from "./pages/CampaignAnalytics.jsx";
 
 export default function App() {
   return (
@@ -60,6 +61,14 @@ export default function App() {
             element={
               <AuthGuard>
                 <CampaignNotes />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/campaigns/:id/analytics"
+            element={
+              <AuthGuard>
+                <CampaignAnalytics />
               </AuthGuard>
             }
           />

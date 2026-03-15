@@ -29,7 +29,32 @@ from datetime import datetime
 
 from pydantic import BaseModel
 from app.schemas.session import CampaignNoteEntry, SessionListItem
-from app.services import campaign_service, milestone_service, session_note_service, session_service
+from app.services import analytics_service, campaign_service, milestone_service, session_note_service, session_service
+
+
+# ── Analytics schemas (inline) ─────────────────────────────────────────────────
+
+class MemberAnalyticsResponse(BaseModel):
+    user_id: uuid.UUID
+    display_name: str
+    role: str
+    sessions_eligible: int
+    sessions_attended: int
+    attendance_rate: float | None
+    vote_sessions_eligible: int
+    vote_sessions_participated: int
+    vote_participation_rate: float | None
+
+
+class CampaignAnalyticsResponse(BaseModel):
+    total_sessions: int
+    proposed_sessions: int
+    confirmed_sessions: int
+    completed_sessions: int
+    cancelled_sessions: int
+    average_gap_days: float | None
+    sessions_last_30_days: int
+    members: list[MemberAnalyticsResponse]
 
 
 # ── Milestone schemas (inline) ─────────────────────────────────────────────────
@@ -247,6 +272,41 @@ async def get_campaign_notes(
     """
     return await session_note_service.get_campaign_notes(
         db, current_user.id, campaign_id
+    )
+
+
+# ── Analytics ──────────────────────────────────────────────────────────────────
+
+@router.get("/{campaign_id}/analytics", response_model=CampaignAnalyticsResponse)
+async def get_analytics(
+    campaign_id: uuid.UUID,
+    _: User = Depends(require_campaign_member),
+    db: AsyncSession = Depends(get_db),
+) -> CampaignAnalyticsResponse:
+    """Return aggregated analytics for a campaign (any member)."""
+    data = await analytics_service.get_campaign_analytics(db, campaign_id)
+    return CampaignAnalyticsResponse(
+        total_sessions=data.total_sessions,
+        proposed_sessions=data.proposed_sessions,
+        confirmed_sessions=data.confirmed_sessions,
+        completed_sessions=data.completed_sessions,
+        cancelled_sessions=data.cancelled_sessions,
+        average_gap_days=data.average_gap_days,
+        sessions_last_30_days=data.sessions_last_30_days,
+        members=[
+            MemberAnalyticsResponse(
+                user_id=m.user_id,
+                display_name=m.display_name,
+                role=m.role,
+                sessions_eligible=m.sessions_eligible,
+                sessions_attended=m.sessions_attended,
+                attendance_rate=m.attendance_rate,
+                vote_sessions_eligible=m.vote_sessions_eligible,
+                vote_sessions_participated=m.vote_sessions_participated,
+                vote_participation_rate=m.vote_participation_rate,
+            )
+            for m in data.members
+        ],
     )
 
 

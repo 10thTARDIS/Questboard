@@ -91,3 +91,6 @@ export const updateMilestone = (campaignId, milestoneId, data) =>
 
 export const deleteMilestone = (campaignId, milestoneId) =>
   request(`${BASE}/${campaignId}/milestones/${milestoneId}`, { method: "DELETE" });
+
+export const fetchCampaignAnalytics = (campaignId) =>
+  request(`${BASE}/${campaignId}/analytics`);

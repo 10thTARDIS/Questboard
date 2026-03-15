@@ -313,6 +313,40 @@ Returns the next upcoming confirmed session for this campaign, or `null` if none
 
 ---
 
+### `GET /api/campaigns/{campaign_id}/analytics`
+
+Returns aggregated analytics for a campaign. Accessible to all campaign members.
+
+**Response `200`:**
+```json
+{
+  "total_sessions": 12,
+  "proposed_sessions": 1,
+  "confirmed_sessions": 2,
+  "completed_sessions": 8,
+  "cancelled_sessions": 1,
+  "average_gap_days": 14.5,
+  "sessions_last_30_days": 2,
+  "members": [
+    {
+      "user_id": "uuid",
+      "display_name": "string",
+      "role": "gm | player",
+      "sessions_eligible": 8,
+      "sessions_attended": 7,
+      "attendance_rate": 0.875,
+      "vote_sessions_eligible": 4,
+      "vote_sessions_participated": 3,
+      "vote_participation_rate": 0.75
+    }
+  ]
+}
+```
+
+`attendance_rate` and `vote_participation_rate` are `null` when there are no eligible sessions yet. Only sessions created after a member joined are counted as eligible.
+
+---
+
 ### `GET /api/campaigns/{campaign_id}/my-notes`
 
 Returns the current user's aggregated session journal for this campaign: the user's own notes (any visibility) and public GM notes, ordered chronologically by session time.
