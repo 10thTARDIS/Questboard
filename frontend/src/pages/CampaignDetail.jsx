@@ -14,14 +14,18 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import {
+  createMilestone,
   deleteCampaign,
+  deleteMilestone,
   fetchCampaign,
   fetchMembers,
+  fetchMilestones,
   leaveCampaign,
   regenerateInviteCode,
   removeMember,
   updateCampaign,
   updateMember,
+  updateMilestone,
 } from "../api/campaigns.js";
 import { createSession, fetchSessions } from "../api/sessions.js";
 import DateTimePicker from "../components/DateTimePicker.jsx";
@@ -104,6 +108,15 @@ export default function CampaignDetail() {
   // Sessions state
   const [sessions, setSessions] = useState([]);
   const [showNewSession, setShowNewSession] = useState(false);
+
+  // Milestones state
+  const [milestones, setMilestones] = useState([]);
+  const [showNewMilestone, setShowNewMilestone] = useState(false);
+  const [milestoneForm, setMilestoneForm] = useState({ title: "", description: "", session_id: "", milestone_date: "" });
+  const [editingMilestone, setEditingMilestone] = useState(null); // milestone id being edited
+  const [editMilestoneForm, setEditMilestoneForm] = useState({});
+  const [milestoneError, setMilestoneError] = useState(null);
+  const [savingMilestone, setSavingMilestone] = useState(false);
   const [sessionForm, setSessionForm] = useState({
     title: "", description: "", scheduling_mode: "vote",
     times: ["", ""],  // local datetime-local strings
@@ -112,11 +125,12 @@ export default function CampaignDetail() {
   const [creatingSession, setCreatingSession] = useState(false);
 
   useEffect(() => {
-    Promise.all([fetchCampaign(id), fetchMembers(id), fetchSessions(id)])
-      .then(([c, m, s]) => {
+    Promise.all([fetchCampaign(id), fetchMembers(id), fetchSessions(id), fetchMilestones(id)])
+      .then(([c, m, s, ms]) => {
         setCampaign(c);
         setMembers(m);
         setSessions(s);
+        setMilestones(ms ?? []);
         setEditForm({
           name: c.name,
           game_system: c.game_system ?? "",
@@ -219,6 +233,64 @@ export default function CampaignDetail() {
     try {
       await leaveCampaign(id);
       navigate("/dashboard");
+    } catch (e) {
+      setActionError(e.message);
+    }
+  };
+
+  // ── Milestone handlers ────────────────────────────────────────────────────────
+
+  const handleCreateMilestone = async (e) => {
+    e.preventDefault();
+    if (!milestoneForm.title.trim()) return;
+    setSavingMilestone(true);
+    setMilestoneError(null);
+    try {
+      const created = await createMilestone(id, {
+        title: milestoneForm.title.trim(),
+        description: milestoneForm.description.trim() || null,
+        session_id: milestoneForm.session_id || null,
+        milestone_date: milestoneForm.milestone_date
+          ? new Date(milestoneForm.milestone_date).toISOString()
+          : null,
+      });
+      setMilestones((prev) => [...prev, created]);
+      setMilestoneForm({ title: "", description: "", session_id: "", milestone_date: "" });
+      setShowNewMilestone(false);
+    } catch (e) {
+      setMilestoneError(e.message);
+    } finally {
+      setSavingMilestone(false);
+    }
+  };
+
+  const handleUpdateMilestone = async (e, milestoneId) => {
+    e.preventDefault();
+    setSavingMilestone(true);
+    setMilestoneError(null);
+    try {
+      const updated = await updateMilestone(id, milestoneId, {
+        title: editMilestoneForm.title || undefined,
+        description: editMilestoneForm.description || null,
+        session_id: editMilestoneForm.session_id || null,
+        milestone_date: editMilestoneForm.milestone_date
+          ? new Date(editMilestoneForm.milestone_date).toISOString()
+          : null,
+      });
+      setMilestones((prev) => prev.map((m) => (m.id === milestoneId ? updated : m)));
+      setEditingMilestone(null);
+    } catch (e) {
+      setMilestoneError(e.message);
+    } finally {
+      setSavingMilestone(false);
+    }
+  };
+
+  const handleDeleteMilestone = async (milestoneId) => {
+    if (!confirm("Delete this milestone?")) return;
+    try {
+      await deleteMilestone(id, milestoneId);
+      setMilestones((prev) => prev.filter((m) => m.id !== milestoneId));
     } catch (e) {
       setActionError(e.message);
     }
@@ -820,6 +892,200 @@ export default function CampaignDetail() {
               </li>
             ))}
           </ul>
+        </section>
+
+        {/* Milestones */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-base">Milestones</h3>
+            {isGm && !showNewMilestone && (
+              <button
+                onClick={() => setShowNewMilestone(true)}
+                className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm hover:border-gray-500 transition"
+              >
+                + Add Milestone
+              </button>
+            )}
+          </div>
+
+          {milestoneError && (
+            <p className="text-sm text-red-400">{milestoneError}</p>
+          )}
+
+          {showNewMilestone && isGm && (
+            <form
+              onSubmit={handleCreateMilestone}
+              className="rounded-xl border border-gray-800 bg-gray-900 p-5 space-y-3"
+            >
+              <h4 className="font-medium text-sm">New Milestone</h4>
+              <input
+                required
+                placeholder="Title"
+                value={milestoneForm.title}
+                onChange={(e) => setMilestoneForm((f) => ({ ...f, title: e.target.value }))}
+                className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <textarea
+                placeholder="Description (optional)"
+                rows={2}
+                value={milestoneForm.description}
+                onChange={(e) => setMilestoneForm((f) => ({ ...f, description: e.target.value }))}
+                className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+              />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Linked session (optional)</label>
+                  <select
+                    value={milestoneForm.session_id}
+                    onChange={(e) => setMilestoneForm((f) => ({ ...f, session_id: e.target.value }))}
+                    className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">— None —</option>
+                    {sessions.map((s) => (
+                      <option key={s.id} value={s.id}>{s.title ?? "Untitled Session"}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1">Date (optional)</label>
+                  <input
+                    type="date"
+                    value={milestoneForm.milestone_date}
+                    onChange={(e) => setMilestoneForm((f) => ({ ...f, milestone_date: e.target.value }))}
+                    className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setShowNewMilestone(false); setMilestoneForm({ title: "", description: "", session_id: "", milestone_date: "" }); }}
+                  className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm hover:border-gray-500 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingMilestone}
+                  className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
+                >
+                  {savingMilestone ? "Adding…" : "Add Milestone"}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {milestones.length === 0 && !showNewMilestone && (
+            <p className="text-sm text-gray-600 py-4 text-center">
+              No milestones yet.{isGm ? " Add one to track key campaign events." : ""}
+            </p>
+          )}
+
+          <div className="space-y-2">
+            {milestones.map((m) =>
+              editingMilestone === m.id ? (
+                <form
+                  key={m.id}
+                  onSubmit={(e) => handleUpdateMilestone(e, m.id)}
+                  className="rounded-xl border border-indigo-900/50 bg-gray-900 p-4 space-y-3"
+                >
+                  <input
+                    required
+                    value={editMilestoneForm.title}
+                    onChange={(e) => setEditMilestoneForm((f) => ({ ...f, title: e.target.value }))}
+                    className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <textarea
+                    placeholder="Description (optional)"
+                    rows={2}
+                    value={editMilestoneForm.description ?? ""}
+                    onChange={(e) => setEditMilestoneForm((f) => ({ ...f, description: e.target.value }))}
+                    className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-xs text-gray-400 block mb-1">Linked session</label>
+                      <select
+                        value={editMilestoneForm.session_id ?? ""}
+                        onChange={(e) => setEditMilestoneForm((f) => ({ ...f, session_id: e.target.value }))}
+                        className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="">— None —</option>
+                        {sessions.map((s) => (
+                          <option key={s.id} value={s.id}>{s.title ?? "Untitled Session"}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-gray-400 block mb-1">Date</label>
+                      <input
+                        type="date"
+                        value={editMilestoneForm.milestone_date ?? ""}
+                        onChange={(e) => setEditMilestoneForm((f) => ({ ...f, milestone_date: e.target.value }))}
+                        className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <button type="button" onClick={() => setEditingMilestone(null)} className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs hover:border-gray-500 transition">Cancel</button>
+                    <button type="submit" disabled={savingMilestone} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium hover:bg-indigo-500 disabled:opacity-50 transition">{savingMilestone ? "Saving…" : "Save"}</button>
+                  </div>
+                </form>
+              ) : (
+                <div key={m.id} className="rounded-xl border border-gray-800 bg-gray-900 px-4 py-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm">{m.title}</p>
+                      {m.description && (
+                        <p className="text-xs text-gray-400 mt-0.5 whitespace-pre-wrap">{m.description}</p>
+                      )}
+                      <div className="flex items-center gap-3 mt-1.5">
+                        {m.milestone_date && (
+                          <span className="text-xs text-gray-500">
+                            {new Date(m.milestone_date).toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                          </span>
+                        )}
+                        {m.session_id && (() => {
+                          const linkedSession = sessions.find((s) => s.id === m.session_id);
+                          return linkedSession ? (
+                            <Link to={`/sessions/${m.session_id}`} className="text-xs text-indigo-400 hover:text-indigo-300 transition">
+                              {linkedSession.title ?? "Untitled Session"} ↗
+                            </Link>
+                          ) : null;
+                        })()}
+                      </div>
+                    </div>
+                    {isGm && (
+                      <div className="flex items-center gap-3 shrink-0">
+                        <button
+                          onClick={() => {
+                            setEditingMilestone(m.id);
+                            setEditMilestoneForm({
+                              title: m.title,
+                              description: m.description ?? "",
+                              session_id: m.session_id ?? "",
+                              milestone_date: m.milestone_date
+                                ? new Date(m.milestone_date).toISOString().slice(0, 10)
+                                : "",
+                            });
+                          }}
+                          className="text-xs text-indigo-400 hover:text-indigo-300 transition"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteMilestone(m.id)}
+                          className="text-xs text-red-400 hover:text-red-300 transition"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            )}
+          </div>
         </section>
       </main>
     </div>

@@ -1,11 +1,13 @@
 /**
- * Profile — lets the user set their display name override and timezone.
+ * Profile — lets the user set their display name override, timezone,
+ * and link/unlink external platform accounts (Discord, Matrix).
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { updateMe } from "../api/auth.js";
+import { addPlatformLink, fetchPlatformLinks, removePlatformLink } from "../api/users.js";
 
 // Common IANA timezone list (subset of most-used zones)
 const COMMON_TIMEZONES = [
@@ -48,6 +50,8 @@ const COMMON_TIMEZONES = [
   "Pacific/Auckland",
 ];
 
+const PLATFORM_LABELS = { discord: "Discord", matrix: "Matrix" };
+
 export default function Profile() {
   const { user, refreshUser } = useAuth();
 
@@ -58,6 +62,20 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(false);
+
+  // Platform links
+  const [links, setLinks] = useState([]);
+  const [linksLoading, setLinksLoading] = useState(true);
+  const [linkForm, setLinkForm] = useState({ platform: "discord", platform_user_id: "" });
+  const [linkError, setLinkError] = useState(null);
+  const [linkSaving, setLinkSaving] = useState(false);
+
+  useEffect(() => {
+    fetchPlatformLinks()
+      .then(setLinks)
+      .catch(() => {})
+      .finally(() => setLinksLoading(false));
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -79,6 +97,34 @@ export default function Profile() {
     }
   };
 
+  const handleAddLink = async (e) => {
+    e.preventDefault();
+    if (!linkForm.platform_user_id.trim()) return;
+    setLinkSaving(true);
+    setLinkError(null);
+    try {
+      const newLink = await addPlatformLink(linkForm.platform, linkForm.platform_user_id.trim());
+      setLinks((prev) => {
+        const filtered = prev.filter((l) => l.platform !== newLink.platform);
+        return [...filtered, newLink];
+      });
+      setLinkForm((f) => ({ ...f, platform_user_id: "" }));
+    } catch (e) {
+      setLinkError(e.message);
+    } finally {
+      setLinkSaving(false);
+    }
+  };
+
+  const handleRemoveLink = async (platform) => {
+    try {
+      await removePlatformLink(platform);
+      setLinks((prev) => prev.filter((l) => l.platform !== platform));
+    } catch (e) {
+      setLinkError(e.message);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <header className="border-b border-gray-800 px-6 py-4 flex items-center gap-4">
@@ -89,7 +135,8 @@ export default function Profile() {
         <span className="font-semibold">Profile</span>
       </header>
 
-      <main className="mx-auto max-w-lg px-6 py-8">
+      <main className="mx-auto max-w-lg px-6 py-8 space-y-6">
+        {/* Profile settings */}
         <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
           <h2 className="text-lg font-bold mb-1">Your Profile</h2>
           <p className="text-sm text-gray-400 mb-6">
@@ -143,6 +190,86 @@ export default function Profile() {
                 {saving ? "Saving…" : "Save changes"}
               </button>
             </div>
+          </form>
+        </div>
+
+        {/* Connected accounts */}
+        <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+          <h2 className="text-lg font-bold mb-1">Connected Accounts</h2>
+          <p className="text-sm text-gray-400 mb-4">
+            Link your platform accounts so the Discord bot can identify you.
+          </p>
+
+          {linksLoading ? (
+            <p className="text-sm text-gray-500">Loading…</p>
+          ) : (
+            <div className="space-y-2 mb-4">
+              {links.length === 0 && (
+                <p className="text-sm text-gray-500">No accounts linked yet.</p>
+              )}
+              {links.map((link) => (
+                <div
+                  key={link.platform}
+                  className="flex items-center justify-between rounded-lg bg-gray-800 px-3 py-2"
+                >
+                  <div>
+                    <span className="text-sm font-medium">
+                      {PLATFORM_LABELS[link.platform] ?? link.platform}
+                    </span>
+                    <span className="ml-2 text-sm text-gray-400 font-mono">
+                      {link.platform_user_id}
+                    </span>
+                    {link.verified_at && (
+                      <span className="ml-2 text-xs text-green-500">verified</span>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleRemoveLink(link.platform)}
+                    className="text-xs text-red-400 hover:text-red-300 transition"
+                  >
+                    Unlink
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <form onSubmit={handleAddLink} className="space-y-3">
+            <div className="flex gap-2">
+              <select
+                value={linkForm.platform}
+                onChange={(e) => setLinkForm((f) => ({ ...f, platform: e.target.value }))}
+                className="rounded-lg bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="discord">Discord</option>
+                <option value="matrix">Matrix</option>
+              </select>
+              <input
+                type="text"
+                placeholder={
+                  linkForm.platform === "discord" ? "Discord user ID" : "Matrix user ID"
+                }
+                value={linkForm.platform_user_id}
+                onChange={(e) =>
+                  setLinkForm((f) => ({ ...f, platform_user_id: e.target.value }))
+                }
+                className="flex-1 rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                type="submit"
+                disabled={linkSaving || !linkForm.platform_user_id.trim()}
+                className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
+              >
+                {linkSaving ? "Linking…" : "Link"}
+              </button>
+            </div>
+            {linkForm.platform === "discord" && (
+              <p className="text-xs text-gray-500">
+                Enter your Discord user ID (not your username). To find it: enable Developer Mode
+                in Discord → Settings → Advanced, then right-click your name and select "Copy User ID".
+              </p>
+            )}
+            {linkError && <p className="text-sm text-red-400">{linkError}</p>}
           </form>
         </div>
       </main>

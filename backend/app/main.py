@@ -21,7 +21,7 @@ from slowapi.errors import RateLimitExceeded
 from app.config import settings
 from app.limiter import limiter
 from app.middleware.security import SecurityHeadersMiddleware
-from app.routers import auth, campaigns, sessions, timeslots, users, votes
+from app.routers import auth, bot, campaigns, sessions, timeslots, users, votes
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +56,7 @@ app.include_router(campaigns.router, prefix="/api/campaigns", tags=["campaigns"]
 app.include_router(sessions.router, prefix="/api", tags=["sessions"])
 app.include_router(timeslots.router, prefix="/api", tags=["timeslots"])
 app.include_router(votes.router, prefix="/api", tags=["votes"])
+app.include_router(bot.router, prefix="/api", tags=["bot"])
 
 
 # ── Global exception handler ───────────────────────────────────────────────────

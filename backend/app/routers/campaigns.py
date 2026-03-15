@@ -25,8 +25,40 @@ from app.schemas.campaign import (
     MemberResponse,
     MemberUpdate,
 )
+from datetime import datetime
+
+from pydantic import BaseModel
 from app.schemas.session import CampaignNoteEntry, SessionListItem
-from app.services import campaign_service, session_note_service, session_service
+from app.services import campaign_service, milestone_service, session_note_service, session_service
+
+
+# ── Milestone schemas (inline) ─────────────────────────────────────────────────
+
+class MilestoneCreate(BaseModel):
+    title: str
+    description: str | None = None
+    session_id: uuid.UUID | None = None
+    milestone_date: datetime | None = None
+
+
+class MilestoneUpdate(BaseModel):
+    title: str | None = None
+    description: str | None = None
+    session_id: uuid.UUID | None = None
+    milestone_date: datetime | None = None
+
+
+class MilestoneResponse(BaseModel):
+    id: uuid.UUID
+    campaign_id: uuid.UUID
+    title: str
+    description: str | None
+    session_id: uuid.UUID | None
+    created_by: uuid.UUID | None
+    created_at: datetime
+    milestone_date: datetime | None
+
+    model_config = {"from_attributes": True}
 
 router = APIRouter()
 
@@ -216,3 +248,93 @@ async def get_campaign_notes(
     return await session_note_service.get_campaign_notes(
         db, current_user.id, campaign_id
     )
+
+
+# ── Milestones ─────────────────────────────────────────────────────────────────
+
+@router.get("/{campaign_id}/milestones", response_model=list[MilestoneResponse])
+async def list_milestones(
+    campaign_id: uuid.UUID,
+    _: User = Depends(require_campaign_member),
+    db: AsyncSession = Depends(get_db),
+) -> list[MilestoneResponse]:
+    """Return all milestones for a campaign (any member)."""
+    milestones = await milestone_service.list_milestones(db, campaign_id)
+    return [MilestoneResponse.model_validate(m) for m in milestones]
+
+
+@router.post(
+    "/{campaign_id}/milestones",
+    response_model=MilestoneResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_milestone(
+    campaign_id: uuid.UUID,
+    data: MilestoneCreate,
+    current_user: User = Depends(require_gm),
+    db: AsyncSession = Depends(get_db),
+) -> MilestoneResponse:
+    """Create a new milestone (GM only)."""
+    milestone = await milestone_service.create_milestone(
+        db,
+        campaign_id=campaign_id,
+        creator_id=current_user.id,
+        title=data.title,
+        description=data.description,
+        session_id=data.session_id,
+        milestone_date=data.milestone_date,
+    )
+    return MilestoneResponse.model_validate(milestone)
+
+
+@router.patch("/{campaign_id}/milestones/{milestone_id}", response_model=MilestoneResponse)
+async def update_milestone(
+    campaign_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    data: MilestoneUpdate,
+    _: User = Depends(require_gm),
+    db: AsyncSession = Depends(get_db),
+) -> MilestoneResponse:
+    """Update a milestone (GM only)."""
+    from app.models.milestone import Milestone
+    from sqlalchemy import select as sel
+    milestone = await db.scalar(
+        sel(Milestone).where(
+            Milestone.id == milestone_id,
+            Milestone.campaign_id == campaign_id,
+        )
+    )
+    if milestone is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
+    updated = await milestone_service.update_milestone(
+        db, milestone,
+        title=data.title,
+        description=data.description,
+        session_id=data.session_id,
+        milestone_date=data.milestone_date,
+    )
+    return MilestoneResponse.model_validate(updated)
+
+
+@router.delete(
+    "/{campaign_id}/milestones/{milestone_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def delete_milestone(
+    campaign_id: uuid.UUID,
+    milestone_id: uuid.UUID,
+    _: User = Depends(require_gm),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Delete a milestone (GM only)."""
+    from app.models.milestone import Milestone
+    from sqlalchemy import select as sel
+    milestone = await db.scalar(
+        sel(Milestone).where(
+            Milestone.id == milestone_id,
+            Milestone.campaign_id == campaign_id,
+        )
+    )
+    if milestone is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Milestone not found")
+    await milestone_service.delete_milestone(db, milestone)

@@ -18,6 +18,7 @@ import {
   saveNotificationSettings,
   sendTestEmail,
 } from "../api/sessions.js";
+import { fetchBotSettings, regenerateBotApiKey, saveBotSettings } from "../api/users.js";
 
 function fmt(iso) {
   if (!iso) return "Never";
@@ -270,6 +271,235 @@ function NotificationSettings() {
   );
 }
 
+// ── Bot settings section ───────────────────────────────────────────────────────
+
+function BotSettings() {
+  const [settings, setSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [newKey, setNewKey] = useState(null);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+
+  const [form, setForm] = useState({
+    bot_token: "",
+    whisper_endpoint_url: "",
+    whisper_api_key: "",
+    llm_endpoint_url: "",
+    llm_api_key: "",
+    llm_model: "",
+  });
+
+  useEffect(() => {
+    fetchBotSettings()
+      .then((s) => {
+        setSettings(s);
+        setForm((f) => ({
+          ...f,
+          whisper_endpoint_url: s.whisper_endpoint_url || "",
+          llm_endpoint_url: s.llm_endpoint_url || "",
+          llm_model: s.llm_model || "",
+        }));
+      })
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+    try {
+      const updated = await saveBotSettings(form);
+      setSettings(updated);
+      setSuccess("Settings saved.");
+      setForm((f) => ({ ...f, bot_token: "", whisper_api_key: "", llm_api_key: "" }));
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleRegenerate = async () => {
+    if (!confirm("Regenerate the bot API key? The current key will stop working immediately.")) return;
+    setRegenerating(true);
+    setError(null);
+    setNewKey(null);
+    try {
+      const result = await regenerateBotApiKey();
+      setNewKey(result.api_key);
+      setSettings((s) => s ? { ...s, api_key_configured: true } : s);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
+  if (loading) return <p className="text-sm text-gray-500">Loading settings…</p>;
+
+  return (
+    <form onSubmit={handleSave} className="space-y-6">
+      {error && (
+        <p className="rounded-lg bg-red-900/40 border border-red-800 px-4 py-2 text-sm text-red-300">
+          {error}
+        </p>
+      )}
+      {success && (
+        <p className="rounded-lg bg-green-900/30 border border-green-800 px-4 py-2 text-sm text-green-300">
+          {success}
+        </p>
+      )}
+
+      {/* Bot API key */}
+      <div>
+        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+          Bot API Key
+          {settings?.api_key_configured && (
+            <span className="ml-2 rounded-full bg-green-900/50 text-green-400 px-2 py-0.5 normal-case font-normal">
+              Configured
+            </span>
+          )}
+        </p>
+        <p className="text-xs text-gray-500 mb-3">
+          The Discord bot uses this key in every request it makes to Questboard (X-Bot-Key header).
+          The key is only shown once when generated.
+        </p>
+        {newKey && (
+          <div className="rounded-lg bg-yellow-900/30 border border-yellow-700 px-4 py-3 mb-3">
+            <p className="text-xs text-yellow-300 font-medium mb-1">New API key — copy it now, it won't be shown again:</p>
+            <code className="text-xs font-mono text-yellow-200 break-all">{newKey}</code>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={handleRegenerate}
+          disabled={regenerating}
+          className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-600 disabled:opacity-50 transition"
+        >
+          {regenerating ? "Generating…" : settings?.api_key_configured ? "Regenerate Key" : "Generate Key"}
+        </button>
+      </div>
+
+      {/* Discord bot token */}
+      <div>
+        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+          Discord Bot Token
+          {settings?.bot_token_configured && (
+            <span className="ml-2 rounded-full bg-green-900/50 text-green-400 px-2 py-0.5 normal-case font-normal">
+              Configured
+            </span>
+          )}
+        </p>
+        <input
+          type="password"
+          value={form.bot_token}
+          onChange={(e) => setForm((f) => ({ ...f, bot_token: e.target.value }))}
+          placeholder={settings?.bot_token_configured ? "Leave blank to keep current" : "Discord bot token"}
+          autoComplete="new-password"
+          className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+      </div>
+
+      {/* Whisper */}
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+          Whisper (Transcription)
+          {settings?.whisper_configured && (
+            <span className="ml-2 rounded-full bg-green-900/50 text-green-400 px-2 py-0.5 normal-case font-normal">
+              Configured
+            </span>
+          )}
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Endpoint URL</label>
+            <input
+              type="url"
+              value={form.whisper_endpoint_url}
+              onChange={(e) => setForm((f) => ({ ...f, whisper_endpoint_url: e.target.value }))}
+              placeholder="https://whisper.example.com"
+              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">
+              API Key {settings?.whisper_configured && <span className="text-gray-600">(leave blank to keep)</span>}
+            </label>
+            <input
+              type="password"
+              value={form.whisper_api_key}
+              onChange={(e) => setForm((f) => ({ ...f, whisper_api_key: e.target.value }))}
+              autoComplete="new-password"
+              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* LLM */}
+      <div className="space-y-3">
+        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+          LLM (Summarisation)
+          {settings?.llm_configured && (
+            <span className="ml-2 rounded-full bg-green-900/50 text-green-400 px-2 py-0.5 normal-case font-normal">
+              Configured
+            </span>
+          )}
+        </p>
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">Endpoint URL</label>
+            <input
+              type="url"
+              value={form.llm_endpoint_url}
+              onChange={(e) => setForm((f) => ({ ...f, llm_endpoint_url: e.target.value }))}
+              placeholder="https://api.openai.com/v1"
+              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-500 mb-1">
+              API Key {settings?.llm_configured && <span className="text-gray-600">(leave blank to keep)</span>}
+            </label>
+            <input
+              type="password"
+              value={form.llm_api_key}
+              onChange={(e) => setForm((f) => ({ ...f, llm_api_key: e.target.value }))}
+              autoComplete="new-password"
+              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+          <div className="col-span-2">
+            <label className="block text-xs text-gray-500 mb-1">Model</label>
+            <input
+              type="text"
+              value={form.llm_model}
+              onChange={(e) => setForm((f) => ({ ...f, llm_model: e.target.value }))}
+              placeholder="gpt-4o"
+              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          type="submit"
+          disabled={saving}
+          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition"
+        >
+          {saving ? "Saving…" : "Save Settings"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+
 // ── Main Admin page ────────────────────────────────────────────────────────────
 
 export default function Admin() {
@@ -281,7 +511,7 @@ export default function Admin() {
   const [error, setError] = useState(null);
   const [actionError, setActionError] = useState(null);
   const [expandedUser, setExpandedUser] = useState(null);
-  const [activeTab, setActiveTab] = useState("users"); // "users" | "settings"
+  const [activeTab, setActiveTab] = useState("users"); // "users" | "settings" | "bot"
 
   // Redirect non-admins
   useEffect(() => {
@@ -325,7 +555,7 @@ export default function Admin() {
       <main className="mx-auto max-w-4xl px-6 py-8">
         {/* Tabs */}
         <div className="flex gap-1 mb-6 border-b border-gray-800">
-          {[["users", "Users"], ["settings", "Notification Settings"]].map(([key, label]) => (
+          {[["users", "Users"], ["settings", "Notification Settings"], ["bot", "Bot Settings"]].map(([key, label]) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
@@ -431,6 +661,13 @@ export default function Admin() {
         {activeTab === "settings" && (
           <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
             <NotificationSettings />
+          </div>
+        )}
+
+        {/* Bot settings tab */}
+        {activeTab === "bot" && (
+          <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+            <BotSettings />
           </div>
         )}
       </main>

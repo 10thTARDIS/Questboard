@@ -71,3 +71,23 @@ export const fetchNextSession = (campaignId) =>
 
 export const fetchCampaignNotes = (campaignId) =>
   request(`${BASE}/${campaignId}/my-notes`);
+
+// ── Milestones ─────────────────────────────────────────────────────────────────
+
+export const fetchMilestones = (campaignId) =>
+  request(`${BASE}/${campaignId}/milestones`);
+
+export const createMilestone = (campaignId, data) =>
+  request(`${BASE}/${campaignId}/milestones`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+
+export const updateMilestone = (campaignId, milestoneId, data) =>
+  request(`${BASE}/${campaignId}/milestones/${milestoneId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+
+export const deleteMilestone = (campaignId, milestoneId) =>
+  request(`${BASE}/${campaignId}/milestones/${milestoneId}`, { method: "DELETE" });

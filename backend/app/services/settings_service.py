@@ -17,6 +17,10 @@ from app.models.app_setting import AppSetting
 
 KEY_SMTP = "smtp_config"
 KEY_DISCORD_WEBHOOK = "default_discord_webhook"
+KEY_BOT_TOKEN = "discord_bot_token"
+KEY_WHISPER = "whisper_config"
+KEY_LLM = "llm_config"
+KEY_BOT_API_KEY = "bot_api_key"
 
 
 # ── Generic get/set ────────────────────────────────────────────────────────────
@@ -74,6 +78,58 @@ async def get_smtp_config(db: AsyncSession) -> SmtpConfig | None:
         from_address=value.get("from_address", ""),
         use_tls=bool(value.get("use_tls", True)),
     )
+
+
+@dataclass
+class WhisperConfig:
+    endpoint_url: str
+    api_key: str
+
+
+@dataclass
+class LLMConfig:
+    endpoint_url: str
+    api_key: str
+    model: str
+
+
+async def get_bot_token(db: AsyncSession) -> str | None:
+    """Return the Discord bot token, or None if not set."""
+    value = await get_setting(db, KEY_BOT_TOKEN)
+    if not value or not value.get("token"):
+        return None
+    return value["token"]
+
+
+async def get_whisper_config(db: AsyncSession) -> WhisperConfig | None:
+    """Return Whisper config, or None if endpoint_url is not set."""
+    value = await get_setting(db, KEY_WHISPER)
+    if not value or not value.get("endpoint_url"):
+        return None
+    return WhisperConfig(
+        endpoint_url=value["endpoint_url"],
+        api_key=value.get("api_key", ""),
+    )
+
+
+async def get_llm_config(db: AsyncSession) -> LLMConfig | None:
+    """Return LLM config, or None if endpoint_url is not set."""
+    value = await get_setting(db, KEY_LLM)
+    if not value or not value.get("endpoint_url"):
+        return None
+    return LLMConfig(
+        endpoint_url=value["endpoint_url"],
+        api_key=value.get("api_key", ""),
+        model=value.get("model", ""),
+    )
+
+
+async def get_bot_api_key(db: AsyncSession) -> str | None:
+    """Return the bot API key, or None if not set."""
+    value = await get_setting(db, KEY_BOT_API_KEY)
+    if not value or not value.get("key"):
+        return None
+    return value["key"]
 
 
 async def get_discord_webhook_fallback(db: AsyncSession) -> str | None:

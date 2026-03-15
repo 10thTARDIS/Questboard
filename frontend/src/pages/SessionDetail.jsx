@@ -68,6 +68,65 @@ function googleCalendarUrl(session) {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
+function RecordingSection({ session }) {
+  const [transcriptOpen, setTranscriptOpen] = useState(false);
+
+  return (
+    <section className="rounded-xl border border-gray-800 bg-gray-900 p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-gray-400">Recording & Transcript</h3>
+        {session.transcript_updated_at && (
+          <span className="text-xs text-gray-600">
+            Last updated:{" "}
+            {new Date(session.transcript_updated_at).toLocaleString(undefined, {
+              month: "short", day: "numeric", year: "numeric",
+              hour: "2-digit", minute: "2-digit",
+            })}
+          </span>
+        )}
+      </div>
+
+      {session.recording_url && (
+        <a
+          href={session.recording_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-sm text-indigo-400 hover:text-indigo-300 transition"
+        >
+          Listen to recording ↗
+        </a>
+      )}
+
+      {session.summary && (
+        <div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+            Session Summary
+          </p>
+          <p className="text-sm text-gray-300 whitespace-pre-wrap">{session.summary}</p>
+        </div>
+      )}
+
+      {session.transcript && (
+        <div>
+          <button
+            onClick={() => setTranscriptOpen((o) => !o)}
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition"
+          >
+            <span>{transcriptOpen ? "▾" : "▸"}</span>
+            {transcriptOpen ? "Hide full transcript" : "Show full transcript"}
+          </button>
+          {transcriptOpen && (
+            <pre className="mt-3 text-xs text-gray-400 whitespace-pre-wrap font-mono bg-gray-800/60 rounded-lg p-4 overflow-x-auto">
+              {session.transcript}
+            </pre>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+
 export default function SessionDetail() {
   const { id } = useParams();
   const { user } = useAuth();
@@ -654,6 +713,11 @@ export default function SessionDetail() {
               </ul>
             )}
           </section>
+        )}
+
+        {/* Transcript & summary — populated by the Discord bot */}
+        {(session.summary || session.transcript) && (
+          <RecordingSection session={session} />
         )}
       </main>
     </div>

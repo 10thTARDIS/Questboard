@@ -1,8 +1,9 @@
 """FastAPI dependency injectors for authentication and authorisation."""
 
+import secrets
 import uuid
 
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Cookie, Depends, Header, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -130,6 +131,20 @@ async def get_session_for_member(
             detail="You are not a member of this campaign",
         )
     return session
+
+
+async def require_bot_auth(
+    x_bot_key: str = Header(..., alias="X-Bot-Key"),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Verify the X-Bot-Key header against the stored bot API key."""
+    from app.services.settings_service import get_bot_api_key
+    stored = await get_bot_api_key(db)
+    if not stored or not secrets.compare_digest(x_bot_key, stored):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid bot API key",
+        )
 
 
 async def get_session_for_gm(

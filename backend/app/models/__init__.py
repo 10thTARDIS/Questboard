@@ -13,3 +13,4 @@ from app.models.session_note import SessionNote as SessionNote  # noqa: F401
 from app.models.session_attendance import SessionAttendance as SessionAttendance  # noqa: F401
 from app.models.platform_link import PlatformLink as PlatformLink  # noqa: F401
 from app.models.app_setting import AppSetting as AppSetting  # noqa: F401
+from app.models.milestone import Milestone as Milestone  # noqa: F401

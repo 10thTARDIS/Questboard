@@ -3,7 +3,7 @@
 import uuid
 from dataclasses import asdict
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -11,9 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import get_current_user, require_admin
 from app.database import get_db
+from app.models.platform_link import PlatformType
 from app.models.user import User
 from app.schemas.user import UserResponse, UserUpdate
-from app.services import admin_service, settings_service, user_service
+from app.services import admin_service, platform_link_service, settings_service, user_service
 
 
 # ── Admin response schemas (inline — small enough not to warrant a separate file)
@@ -63,6 +64,44 @@ class NotificationSettingsResponse(BaseModel):
     smtp: SmtpConfigResponse
     discord_webhook_url: str | None
 
+
+# ── Platform link schemas ──────────────────────────────────────────────────────
+
+class PlatformLinkResponse(BaseModel):
+    platform: str
+    platform_user_id: str
+    linked_at: datetime
+    verified_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
+class PlatformLinkCreate(BaseModel):
+    platform: Literal["discord", "matrix"]
+    platform_user_id: str
+
+
+# ── Bot settings schemas ───────────────────────────────────────────────────────
+
+class BotSettingsRequest(BaseModel):
+    bot_token: str = ""
+    whisper_endpoint_url: str = ""
+    whisper_api_key: str = ""
+    llm_endpoint_url: str = ""
+    llm_api_key: str = ""
+    llm_model: str = ""
+
+
+class BotSettingsResponse(BaseModel):
+    bot_token_configured: bool
+    whisper_endpoint_url: str
+    whisper_configured: bool
+    llm_endpoint_url: str
+    llm_model: str
+    llm_configured: bool
+    api_key_configured: bool
+
+
 router = APIRouter()
 
 
@@ -70,6 +109,55 @@ router = APIRouter()
 async def get_me(current_user: User = Depends(get_current_user)) -> User:
     """Return the currently authenticated user's profile."""
     return current_user
+
+
+# ── Platform links ────────────────────────────────────────────────────────────
+
+@router.get("/me/platform-links", response_model=list[PlatformLinkResponse])
+async def get_platform_links(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> list[PlatformLinkResponse]:
+    """Return all platform links for the current user."""
+    links = await platform_link_service.get_links(db, current_user.id)
+    return [PlatformLinkResponse.model_validate(l) for l in links]
+
+
+@router.post(
+    "/me/platform-links",
+    response_model=PlatformLinkResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def add_platform_link(
+    data: PlatformLinkCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> PlatformLinkResponse:
+    """Link (or re-link) a platform account to the current user."""
+    link = await platform_link_service.upsert_link(
+        db, current_user.id, PlatformType(data.platform), data.platform_user_id
+    )
+    return PlatformLinkResponse.model_validate(link)
+
+
+@router.delete("/me/platform-links/{platform}", status_code=status.HTTP_204_NO_CONTENT)
+async def remove_platform_link(
+    platform: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    """Unlink a platform account from the current user."""
+    try:
+        platform_type = PlatformType(platform)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown platform: {platform}",
+        )
+    try:
+        await platform_link_service.delete_link(db, current_user.id, platform_type)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
 
 
 @router.patch("/me", response_model=UserResponse)
@@ -217,3 +305,93 @@ async def admin_set_notification_settings(
         configured=bool(smtp_cfg and smtp_cfg.host),
     )
     return NotificationSettingsResponse(smtp=smtp_resp, discord_webhook_url=webhook)
+
+
+# ── Admin: bot settings ────────────────────────────────────────────────────────
+
+def _build_bot_settings_response(
+    bot_raw: dict | None,
+    whisper_raw: dict | None,
+    llm_raw: dict | None,
+    api_key_raw: dict | None,
+) -> BotSettingsResponse:
+    return BotSettingsResponse(
+        bot_token_configured=bool(bot_raw and bot_raw.get("token")),
+        whisper_endpoint_url=(whisper_raw or {}).get("endpoint_url", ""),
+        whisper_configured=bool(whisper_raw and whisper_raw.get("endpoint_url")),
+        llm_endpoint_url=(llm_raw or {}).get("endpoint_url", ""),
+        llm_model=(llm_raw or {}).get("model", ""),
+        llm_configured=bool(llm_raw and llm_raw.get("endpoint_url")),
+        api_key_configured=bool(api_key_raw and api_key_raw.get("key")),
+    )
+
+
+@router.get("/admin/settings/bot", response_model=BotSettingsResponse)
+async def admin_get_bot_settings(
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> BotSettingsResponse:
+    """Return bot settings (admin only). Secrets are never returned — only presence flags."""
+    bot_raw = await settings_service.get_setting(db, settings_service.KEY_BOT_TOKEN)
+    whisper_raw = await settings_service.get_setting(db, settings_service.KEY_WHISPER)
+    llm_raw = await settings_service.get_setting(db, settings_service.KEY_LLM)
+    api_key_raw = await settings_service.get_setting(db, settings_service.KEY_BOT_API_KEY)
+    return _build_bot_settings_response(bot_raw, whisper_raw, llm_raw, api_key_raw)
+
+
+@router.put("/admin/settings/bot", response_model=BotSettingsResponse)
+async def admin_set_bot_settings(
+    data: BotSettingsRequest,
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> BotSettingsResponse:
+    """Update bot settings (admin only). Blank fields preserve existing values."""
+    existing_bot = await settings_service.get_setting(db, settings_service.KEY_BOT_TOKEN)
+    await settings_service.set_setting(
+        db,
+        settings_service.KEY_BOT_TOKEN,
+        {"token": data.bot_token if data.bot_token else (existing_bot or {}).get("token", "")},
+    )
+
+    existing_whisper = await settings_service.get_setting(db, settings_service.KEY_WHISPER)
+    await settings_service.set_setting(
+        db,
+        settings_service.KEY_WHISPER,
+        {
+            "endpoint_url": data.whisper_endpoint_url or (existing_whisper or {}).get("endpoint_url", ""),
+            "api_key": data.whisper_api_key if data.whisper_api_key else (existing_whisper or {}).get("api_key", ""),
+        },
+    )
+
+    existing_llm = await settings_service.get_setting(db, settings_service.KEY_LLM)
+    await settings_service.set_setting(
+        db,
+        settings_service.KEY_LLM,
+        {
+            "endpoint_url": data.llm_endpoint_url or (existing_llm or {}).get("endpoint_url", ""),
+            "api_key": data.llm_api_key if data.llm_api_key else (existing_llm or {}).get("api_key", ""),
+            "model": data.llm_model or (existing_llm or {}).get("model", ""),
+        },
+    )
+
+    bot_raw = await settings_service.get_setting(db, settings_service.KEY_BOT_TOKEN)
+    whisper_raw = await settings_service.get_setting(db, settings_service.KEY_WHISPER)
+    llm_raw = await settings_service.get_setting(db, settings_service.KEY_LLM)
+    api_key_raw = await settings_service.get_setting(db, settings_service.KEY_BOT_API_KEY)
+    return _build_bot_settings_response(bot_raw, whisper_raw, llm_raw, api_key_raw)
+
+
+@router.post("/admin/settings/bot/regenerate-key", response_model=dict)
+async def admin_regenerate_bot_api_key(
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Generate a new bot API key and return it once (admin only).
+
+    The key is shown only in this response — subsequent GET calls only return
+    whether a key is configured, not the key itself.
+    """
+    import secrets
+    new_key = secrets.token_hex(32)
+    await settings_service.set_setting(db, settings_service.KEY_BOT_API_KEY, {"key": new_key})
+    return {"api_key": new_key}
