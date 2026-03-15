@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { updateMe } from "../api/auth.js";
 import { addPlatformLink, fetchPlatformLinks, removePlatformLink } from "../api/users.js";
@@ -54,6 +54,7 @@ const PLATFORM_LABELS = { discord: "Discord", matrix: "Matrix" };
 
 export default function Profile() {
   const { user, refreshUser } = useAuth();
+  const [searchParams] = useSearchParams();
 
   const [form, setForm] = useState({
     display_name_override: user?.display_name_override ?? "",
@@ -69,6 +70,9 @@ export default function Profile() {
   const [linkForm, setLinkForm] = useState({ platform: "discord", platform_user_id: "" });
   const [linkError, setLinkError] = useState(null);
   const [linkSaving, setLinkSaving] = useState(false);
+  const [linkSuccess, setLinkSuccess] = useState(
+    searchParams.get("linked") ? `${searchParams.get("linked")} account linked successfully!` : null
+  );
 
   useEffect(() => {
     fetchPlatformLinks()
@@ -199,6 +203,9 @@ export default function Profile() {
           <p className="text-sm text-gray-400 mb-4">
             Link your platform accounts so the Discord bot can identify you.
           </p>
+          {linkSuccess && (
+            <p className="mb-4 text-sm text-green-400">{linkSuccess}</p>
+          )}
 
           {linksLoading ? (
             <p className="text-sm text-gray-500">Loading…</p>

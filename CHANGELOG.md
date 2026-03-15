@@ -13,6 +13,16 @@ _Nothing yet._
 
 ---
 
+## [0.2.1] — 2026-03-15
+
+### Fixed
+
+- Profile page now shows a success banner when redirected back from the
+  Discord account linking flow (`/auth/link?token=…` → `/profile?linked=discord`)
+  — previously the redirect landed silently with no confirmation
+
+---
+
 ## [0.2.0] — 2026-03-15
 
 App-side changes required by the v0.2.0 Discord bot integration.
@@ -164,7 +174,8 @@ app-side foundations required for v2.0 Discord bot integration.
 
 ---
 
-[Unreleased]: https://github.com/10thTARDIS/Questboard/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/10thTARDIS/Questboard/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/10thTARDIS/Questboard/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/10thTARDIS/Questboard/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/10thTARDIS/Questboard/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/10thTARDIS/Questboard/releases/tag/v0.1.0
