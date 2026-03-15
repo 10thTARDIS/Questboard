@@ -35,6 +35,8 @@ class Campaign(Base):
     game_system: Mapped[str | None] = mapped_column(Text, nullable=True)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     discord_webhook_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    guild_id: Mapped[str | None] = mapped_column(Text, nullable=True)
+    notification_channel_id: Mapped[str | None] = mapped_column(Text, nullable=True)
     invite_code: Mapped[str | None] = mapped_column(Text, unique=True, nullable=True)
     timezone: Mapped[str | None] = mapped_column(Text, nullable=True)
     reminder_offsets_minutes: Mapped[list[int] | None] = mapped_column(

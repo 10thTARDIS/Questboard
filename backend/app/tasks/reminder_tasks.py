@@ -24,18 +24,49 @@ def send_session_reminder(
     confirmed_time_iso: str,
     hours_until: int,
     webhook_url: str,
+    *,
+    guild_id: str = "",
+    notification_channel_id: str = "",
+    campaign_id: str = "",
 ) -> None:
     """Send a reminder notification before a confirmed session.
 
     Scheduled with ETAs of 7 days / 24 hours / 1 hour before the session.
     All data is passed as arguments so no DB access is needed in the task.
-    Notifications are sent via all active backends (Discord + email).
+    If the campaign has a guild_id and questboard_bot_url is configured,
+    the notification is routed to the bot instead of the webhook.
     """
     try:
+        from app.config import settings as _settings
         confirmed_time = datetime.fromisoformat(confirmed_time_iso).replace(
             tzinfo=timezone.utc
         )
         title = session_title or "Untitled Session"
+
+        if guild_id and _settings.questboard_bot_url:
+            import httpx as _httpx
+            try:
+                _httpx.post(
+                    f"{_settings.questboard_bot_url}/notify",
+                    json={
+                        "event_type": "session_reminder",
+                        "session_id": session_id,
+                        "campaign_id": campaign_id,
+                        "guild_id": guild_id,
+                        "channel_id": notification_channel_id,
+                        "extra": {
+                            "confirmed_time": confirmed_time_iso,
+                            "hours_until": hours_until,
+                        },
+                    },
+                    headers={"X-Bot-Key": _settings.bot_api_key},
+                    timeout=10,
+                )
+            except Exception as exc:
+                import logging
+                logging.getLogger(__name__).warning("Bot notify (session_reminder) failed: %s", exc)
+            return  # do not double-post to webhook
+
         for backend in _BACKENDS:
             backend.send_reminder(
                 campaign_name=campaign_name,
@@ -61,16 +92,44 @@ def send_session_confirmed(
     session_title: str,
     confirmed_time_iso: str,
     webhook_url: str,
+    *,
+    guild_id: str = "",
+    notification_channel_id: str = "",
+    campaign_id: str = "",
 ) -> None:
     """Notify members immediately when a session is confirmed.
 
-    Notifications are sent via all active backends (Discord + email).
+    If the campaign has a guild_id and questboard_bot_url is configured,
+    the notification is routed to the bot instead of the webhook.
     """
     try:
+        from app.config import settings as _settings
         confirmed_time = datetime.fromisoformat(confirmed_time_iso).replace(
             tzinfo=timezone.utc
         )
         title = session_title or "Untitled Session"
+
+        if guild_id and _settings.questboard_bot_url:
+            import httpx as _httpx
+            try:
+                _httpx.post(
+                    f"{_settings.questboard_bot_url}/notify",
+                    json={
+                        "event_type": "session_confirmed",
+                        "session_id": session_id,
+                        "campaign_id": campaign_id,
+                        "guild_id": guild_id,
+                        "channel_id": notification_channel_id,
+                        "extra": {"confirmed_time": confirmed_time_iso},
+                    },
+                    headers={"X-Bot-Key": _settings.bot_api_key},
+                    timeout=10,
+                )
+            except Exception as exc:
+                import logging
+                logging.getLogger(__name__).warning("Bot notify (session_confirmed) failed: %s", exc)
+            return  # do not double-post to webhook
+
         for backend in _BACKENDS:
             backend.send_confirmation(
                 campaign_name=campaign_name,
@@ -239,3 +298,86 @@ async def _auto_complete_sessions_async() -> None:
             session.status = SessionStatus.completed
         if sessions:
             await db.commit()
+
+
+@celery_app.task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
+    name="app.tasks.reminder_tasks.send_session_proposed",
+)
+def send_session_proposed(
+    self,
+    session_id: str,
+    campaign_id: str,
+    campaign_name: str,
+    session_title: str,
+    guild_id: str,
+    notification_channel_id: str,
+    slot_ids: list[str],
+) -> None:
+    """Notify the bot when a vote-mode session is proposed."""
+    from app.config import settings as _settings
+    if not guild_id or not _settings.questboard_bot_url:
+        return
+    import httpx as _httpx
+    try:
+        resp = _httpx.post(
+            f"{_settings.questboard_bot_url}/notify",
+            json={
+                "event_type": "session_proposed",
+                "session_id": session_id,
+                "campaign_id": campaign_id,
+                "guild_id": guild_id,
+                "channel_id": notification_channel_id,
+                "extra": {
+                    "slot_ids": slot_ids,
+                    "title": session_title,
+                    "campaign_name": campaign_name,
+                },
+            },
+            headers={"X-Bot-Key": _settings.bot_api_key},
+            timeout=10,
+        )
+        resp.raise_for_status()
+    except Exception as exc:
+        raise self.retry(exc=exc)
+
+
+@celery_app.task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
+    name="app.tasks.reminder_tasks.send_session_cancelled",
+)
+def send_session_cancelled(
+    self,
+    session_id: str,
+    campaign_id: str,
+    campaign_name: str,
+    session_title: str,
+    guild_id: str,
+    notification_channel_id: str,
+) -> None:
+    """Notify the bot when a session is cancelled."""
+    from app.config import settings as _settings
+    if not guild_id or not _settings.questboard_bot_url:
+        return
+    import httpx as _httpx
+    try:
+        resp = _httpx.post(
+            f"{_settings.questboard_bot_url}/notify",
+            json={
+                "event_type": "session_cancelled",
+                "session_id": session_id,
+                "campaign_id": campaign_id,
+                "guild_id": guild_id,
+                "channel_id": notification_channel_id,
+                "extra": {"title": session_title, "campaign_name": campaign_name},
+            },
+            headers={"X-Bot-Key": _settings.bot_api_key},
+            timeout=10,
+        )
+        resp.raise_for_status()
+    except Exception as exc:
+        raise self.retry(exc=exc)

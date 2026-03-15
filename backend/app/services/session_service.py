@@ -36,8 +36,9 @@ def _schedule_reminders(
     # Import here to avoid circular imports at module load time
     from app.tasks.reminder_tasks import send_session_confirmed, send_session_reminder
 
+    use_bot = bool(campaign.guild_id and settings.questboard_bot_url)
     webhook_url = _effective_webhook(campaign)
-    if not webhook_url:
+    if not use_bot and not webhook_url:
         return []
 
     task_ids: list[str] = []
@@ -52,7 +53,10 @@ def _schedule_reminders(
         campaign_name,
         session_title,
         confirmed_iso,
-        webhook_url,
+        webhook_url or "",
+        guild_id=campaign.guild_id or "",
+        notification_channel_id=campaign.notification_channel_id or "",
+        campaign_id=str(campaign.id),
     )
 
     # Timed reminders — use campaign-level offsets if set, otherwise default (7d/24h/1h)
@@ -74,8 +78,13 @@ def _schedule_reminders(
                 session_title,
                 confirmed_iso,
                 hours,
-                webhook_url,
+                webhook_url or "",
             ],
+            kwargs={
+                "guild_id": campaign.guild_id or "",
+                "notification_channel_id": campaign.notification_channel_id or "",
+                "campaign_id": str(campaign.id),
+            },
             eta=eta,
         )
         task_ids.append(task.id)
@@ -163,6 +172,25 @@ async def create_session(
             task_id = _schedule_vote_close(session, campaign)
             if task_id:
                 session.vote_close_task_id = task_id
+            # Notify bot of proposed session if bot routing is configured
+            if campaign.guild_id and settings.questboard_bot_url:
+                await db.flush()  # ensure time slots have IDs
+                slots_result = await db.execute(
+                    select(TimeSlot)
+                    .where(TimeSlot.session_id == session.id)
+                    .order_by(TimeSlot.created_at)
+                )
+                slot_ids = [str(s.id) for s in slots_result.scalars().all()]
+                from app.tasks.reminder_tasks import send_session_proposed
+                send_session_proposed.delay(
+                    str(session.id),
+                    str(campaign_id),
+                    campaign.name,
+                    session.title or "Untitled Session",
+                    campaign.guild_id,
+                    campaign.notification_channel_id or "",
+                    slot_ids,
+                )
 
     await db.commit()
     return await get_session_with_slots(db, session.id)  # type: ignore[return-value]
@@ -265,6 +293,17 @@ async def cancel_session(db: AsyncSession, session: Session) -> Session:
     _revoke_reminders(session)
     _revoke_vote_close(session)
     session.status = SessionStatus.cancelled
+    campaign = await db.get(Campaign, session.campaign_id)
+    if campaign and campaign.guild_id and settings.questboard_bot_url:
+        from app.tasks.reminder_tasks import send_session_cancelled
+        send_session_cancelled.delay(
+            str(session.id),
+            str(session.campaign_id),
+            campaign.name,
+            session.title or "Untitled Session",
+            campaign.guild_id,
+            campaign.notification_channel_id or "",
+        )
     await db.commit()
     return await get_session_with_slots(db, session.id)  # type: ignore[return-value]
 

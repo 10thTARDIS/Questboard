@@ -45,6 +45,14 @@ class Settings(BaseSettings):
     # ── Notifications ──────────────────────────────────────────────────────────
     default_discord_webhook_url: str = ""
 
+    # ── Bot integration ────────────────────────────────────────────────────────
+    # URL of the questboard-bot HTTP server. When set, campaigns with guild_id
+    # configured will route notifications to the bot instead of the webhook.
+    questboard_bot_url: str = ""
+    # Shared secret sent as X-Bot-Key in outbound calls from Quest Board to the bot.
+    # Must match BOT_API_KEY in the bot's .env.
+    bot_api_key: str = ""
+
     # ── Celery ─────────────────────────────────────────────────────────────────
     celery_broker_url: str = "redis://redis:6379/1"
     celery_result_backend: str = "redis://redis:6379/2"

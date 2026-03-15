@@ -80,3 +80,35 @@ async def consume_pkce_state(state: str) -> dict | None:
     if payload is None:
         return None
     return json.loads(payload)
+
+
+# ── Discord account linking tokens ────────────────────────────────────────────
+
+_DISCORD_LINK_PREFIX = "discord_link:"
+_DISCORD_LINK_DONE_PREFIX = "discord_link_done:"
+_DISCORD_LINK_TTL = 600       # 10 minutes — set by bot, consumed by /auth/link
+_DISCORD_LINK_DONE_TTL = 900  # 15 minutes — set by /auth/link, consumed by bot poll
+
+
+async def store_discord_link_token(token: str, discord_user_id: str) -> None:
+    """Store a one-time linking token (called by the bot via POST /api/bot/linking-tokens)."""
+    async with _redis() as r:
+        await r.setex(f"{_DISCORD_LINK_PREFIX}{token}", _DISCORD_LINK_TTL, discord_user_id)
+
+
+async def consume_discord_link_token(token: str) -> str | None:
+    """Atomically read and delete the token. Returns discord_user_id or None if expired/missing."""
+    async with _redis() as r:
+        return await r.getdel(f"{_DISCORD_LINK_PREFIX}{token}")
+
+
+async def store_discord_link_done(token: str, user_id: str) -> None:
+    """Store the completion record so the bot can poll for success."""
+    async with _redis() as r:
+        await r.setex(f"{_DISCORD_LINK_DONE_PREFIX}{token}", _DISCORD_LINK_DONE_TTL, user_id)
+
+
+async def consume_discord_link_done(token: str) -> str | None:
+    """Atomically read and delete the completion record. Returns user_id str or None."""
+    async with _redis() as r:
+        return await r.getdel(f"{_DISCORD_LINK_DONE_PREFIX}{token}")

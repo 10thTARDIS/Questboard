@@ -36,6 +36,8 @@ class CampaignCreate(BaseModel):
     game_system: str | None = None
     description: str | None = None
     discord_webhook_url: str | None = None
+    guild_id: str | None = None
+    notification_channel_id: str | None = None
     timezone: str | None = None
     reminder_offsets_minutes: list[int] | None = None
     vote_notification_mode: str | None = None
@@ -50,6 +52,13 @@ class CampaignCreate(BaseModel):
     @classmethod
     def validate_vote_notification_mode(cls, v: str | None) -> str | None:
         return _validate_vote_notification_mode(v)
+
+    @field_validator("guild_id", "notification_channel_id")
+    @classmethod
+    def validate_discord_snowflake(cls, v: str | None) -> str | None:
+        if v is not None and not v.isdigit():
+            raise ValueError("must be a Discord snowflake ID (numeric string)")
+        return v
 
 
 class CampaignUpdate(BaseModel):
@@ -57,6 +66,8 @@ class CampaignUpdate(BaseModel):
     game_system: str | None = None
     description: str | None = None
     discord_webhook_url: str | None = None
+    guild_id: str | None = None
+    notification_channel_id: str | None = None
     timezone: str | None = None
     reminder_offsets_minutes: list[int] | None = None
     vote_notification_mode: str | None = None
@@ -71,6 +82,13 @@ class CampaignUpdate(BaseModel):
     @classmethod
     def validate_vote_notification_mode(cls, v: str | None) -> str | None:
         return _validate_vote_notification_mode(v)
+
+    @field_validator("guild_id", "notification_channel_id")
+    @classmethod
+    def validate_discord_snowflake(cls, v: str | None) -> str | None:
+        if v is not None and not v.isdigit():
+            raise ValueError("must be a Discord snowflake ID (numeric string)")
+        return v
 
 
 class JoinRequest(BaseModel):
@@ -96,6 +114,8 @@ class CampaignResponse(BaseModel):
     game_system: str | None
     description: str | None
     discord_webhook_url: str | None
+    guild_id: str | None
+    notification_channel_id: str | None
     invite_code: str | None
     timezone: str | None
     reminder_offsets_minutes: list[int] | None

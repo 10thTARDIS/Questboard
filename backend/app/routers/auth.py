@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime, timezone
 from urllib.parse import quote
 
-from fastapi import APIRouter, Cookie, Depends, Query, Request
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Query, Request, status
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,6 +24,7 @@ from app.auth.session import (
     delete_session,
     store_pkce_state,
 )
+from app.auth.dependencies import get_current_user
 from app.config import settings
 from app.database import get_db
 from app.limiter import limiter
@@ -203,3 +204,69 @@ async def logout(
     response = RedirectResponse(url=f"{settings.app_url}/login", status_code=302)
     response.delete_cookie(key=_COOKIE_NAME, samesite="lax", secure=True)
     return response
+
+
+@router.get("/link")
+@limiter.limit("10/minute")
+async def discord_link(
+    request: Request,
+    token: str = Query(...),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> RedirectResponse:
+    """Consume a bot-generated Discord linking token and create a platform_link record.
+
+    The user must already be logged in (OIDC session cookie required).
+    On success, redirects to /profile?linked=discord.
+    """
+    from app.auth.session import consume_discord_link_token, store_discord_link_done
+    from app.models.platform_link import PlatformLink, PlatformType
+
+    # 1. Consume the token (GETDEL — single use, 10-minute TTL set by bot)
+    discord_user_id = await consume_discord_link_token(token)
+    if not discord_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Link token is invalid or expired",
+        )
+
+    # 2. Reject if this Discord ID is already linked to a DIFFERENT Questboard user
+    existing_other = await db.scalar(
+        select(PlatformLink).where(
+            PlatformLink.platform == PlatformType.discord,
+            PlatformLink.platform_user_id == discord_user_id,
+            PlatformLink.user_id != current_user.id,
+        )
+    )
+    if existing_other:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This Discord account is already linked to a different Questboard user",
+        )
+
+    # 3. Upsert the platform_link for the current user
+    existing_mine = await db.scalar(
+        select(PlatformLink).where(
+            PlatformLink.user_id == current_user.id,
+            PlatformLink.platform == PlatformType.discord,
+        )
+    )
+    if existing_mine:
+        existing_mine.platform_user_id = discord_user_id
+        existing_mine.verified_at = datetime.now(timezone.utc)
+    else:
+        db.add(PlatformLink(
+            user_id=current_user.id,
+            platform=PlatformType.discord,
+            platform_user_id=discord_user_id,
+            verified_at=datetime.now(timezone.utc),
+        ))
+    await db.commit()
+
+    # 4. Store the completion record so the bot can poll for success (15-min TTL)
+    await store_discord_link_done(token, str(current_user.id))
+
+    return RedirectResponse(
+        url=f"{settings.app_url}/profile?linked=discord",
+        status_code=302,
+    )

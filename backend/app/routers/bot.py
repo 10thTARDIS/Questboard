@@ -222,3 +222,174 @@ async def bot_post_transcript(
 
     await db.commit()
     return {"detail": "Transcript saved"}
+
+
+# ── New endpoints for bot ↔ Questboard integration ────────────────────────────
+
+class VoteCounts(BaseModel):
+    yes: int = 0
+    maybe: int = 0
+    no: int = 0
+
+
+class TimeSlotDetail(BaseModel):
+    slot_id: uuid.UUID
+    proposed_time: datetime
+    vote_counts: VoteCounts
+
+
+class SessionTimeslotsResponse(BaseModel):
+    session_id: uuid.UUID
+    campaign_name: str
+    game_system: str | None
+    reminder_offsets_minutes: list[int] | None
+    slots: list[TimeSlotDetail]
+
+
+@router.get("/bot/sessions/{session_id}/timeslots", response_model=SessionTimeslotsResponse)
+async def bot_session_timeslots(
+    session_id: uuid.UUID,
+    _: None = Depends(require_bot_auth),
+    db: AsyncSession = Depends(get_db),
+) -> SessionTimeslotsResponse:
+    """Return time slots with per-slot vote counts and campaign metadata."""
+    from app.models.vote import Availability, Vote
+
+    session = await db.get(Session, session_id)
+    if session is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+
+    campaign = await db.get(Campaign, session.campaign_id)
+
+    slots_result = await db.execute(
+        select(TimeSlot).where(TimeSlot.session_id == session_id).order_by(TimeSlot.created_at)
+    )
+    slots = slots_result.scalars().all()
+
+    slot_details = []
+    for slot in slots:
+        votes_result = await db.execute(
+            select(Vote).where(Vote.time_slot_id == slot.id)
+        )
+        votes = votes_result.scalars().all()
+        counts = VoteCounts(
+            yes=sum(1 for v in votes if v.availability == Availability.yes),
+            maybe=sum(1 for v in votes if v.availability == Availability.maybe),
+            no=sum(1 for v in votes if v.availability == Availability.no),
+        )
+        slot_details.append(
+            TimeSlotDetail(slot_id=slot.id, proposed_time=slot.proposed_time, vote_counts=counts)
+        )
+
+    return SessionTimeslotsResponse(
+        session_id=session.id,
+        campaign_name=campaign.name if campaign else "",
+        game_system=campaign.game_system if campaign else None,
+        reminder_offsets_minutes=campaign.reminder_offsets_minutes if campaign else None,
+        slots=slot_details,
+    )
+
+
+class PlatformLinkDetail(BaseModel):
+    user_id: uuid.UUID
+    display_name: str
+
+
+@router.get(
+    "/bot/platform-links/{platform}/{platform_user_id}",
+    response_model=PlatformLinkDetail,
+)
+async def bot_platform_link(
+    platform: str,
+    platform_user_id: str,
+    _: None = Depends(require_bot_auth),
+    db: AsyncSession = Depends(get_db),
+) -> PlatformLinkDetail:
+    """Look up a Questboard user by their platform account ID."""
+    try:
+        platform_type = PlatformType(platform)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown platform: {platform}",
+        )
+
+    row = await db.execute(
+        select(PlatformLink, User)
+        .join(User, User.id == PlatformLink.user_id)
+        .where(
+            PlatformLink.platform == platform_type,
+            PlatformLink.platform_user_id == platform_user_id,
+        )
+    )
+    result = row.one_or_none()
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="No linked user found"
+        )
+
+    link, user = result
+    return PlatformLinkDetail(user_id=user.id, display_name=user.effective_display_name)
+
+
+class LinkStatusResponse(BaseModel):
+    linked: bool
+    user_id: uuid.UUID | None = None
+
+
+@router.get("/bot/link-status/{token}", response_model=LinkStatusResponse)
+async def bot_link_status(
+    token: str,
+    _: None = Depends(require_bot_auth),
+) -> LinkStatusResponse:
+    """Poll whether a Discord account linking flow has completed."""
+    from app.auth.session import consume_discord_link_done
+
+    user_id_str = await consume_discord_link_done(token)
+    if user_id_str:
+        return LinkStatusResponse(linked=True, user_id=uuid.UUID(user_id_str))
+    return LinkStatusResponse(linked=False)
+
+
+class BotConfigResponse(BaseModel):
+    whisper_endpoint_url: str | None = None
+    whisper_api_key: str | None = None
+    llm_endpoint_url: str | None = None
+    llm_api_key: str | None = None
+    llm_model: str | None = None
+
+
+@router.get("/bot/settings", response_model=BotConfigResponse)
+async def bot_get_settings(
+    _: None = Depends(require_bot_auth),
+    db: AsyncSession = Depends(get_db),
+) -> BotConfigResponse:
+    """Return Whisper and LLM configuration for the bot."""
+    from app.services.settings_service import get_llm_config, get_whisper_config
+
+    whisper = await get_whisper_config(db)
+    llm = await get_llm_config(db)
+    return BotConfigResponse(
+        whisper_endpoint_url=whisper.endpoint_url if whisper else None,
+        whisper_api_key=whisper.api_key if whisper else None,
+        llm_endpoint_url=llm.endpoint_url if llm else None,
+        llm_api_key=llm.api_key if llm else None,
+        llm_model=llm.model if llm else None,
+    )
+
+
+class LinkingTokenRequest(BaseModel):
+    token: str
+    discord_user_id: str
+
+
+@router.post("/bot/linking-tokens", status_code=status.HTTP_201_CREATED)
+async def bot_store_linking_token(
+    data: LinkingTokenRequest,
+    _: None = Depends(require_bot_auth),
+) -> dict:
+    """Store a one-time Discord account linking token generated by the bot."""
+    from app.auth.session import store_discord_link_token
+
+    await store_discord_link_token(data.token, data.discord_user_id)
+    return {"detail": "ok"}

@@ -136,6 +136,8 @@ export default function CampaignDetail() {
           game_system: c.game_system ?? "",
           description: c.description ?? "",
           discord_webhook_url: c.discord_webhook_url ?? "",
+          guild_id: c.guild_id ?? "",
+          notification_channel_id: c.notification_channel_id ?? "",
           timezone: c.timezone ?? "",
           reminders: (c.reminder_offsets_minutes ?? []).map(minutesToReminder),
           vote_notification_mode: c.vote_notification_mode ?? "",
@@ -160,6 +162,8 @@ export default function CampaignDetail() {
         game_system: editForm.game_system || null,
         description: editForm.description || null,
         discord_webhook_url: editForm.discord_webhook_url || null,
+        guild_id: editForm.guild_id || null,
+        notification_channel_id: editForm.notification_channel_id || null,
         timezone: editForm.timezone || null,
         reminder_offsets_minutes: minutesList.length > 0 ? minutesList : null,
         vote_notification_mode: editForm.vote_notification_mode || null,
@@ -441,6 +445,31 @@ export default function CampaignDetail() {
                 value={editForm.discord_webhook_url}
                 onChange={(e) =>
                   setEditForm((f) => ({ ...f, discord_webhook_url: e.target.value }))
+                }
+                className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <div>
+                <input
+                  id="guild_id"
+                  type="text"
+                  placeholder="Discord Server ID / Guild ID (optional)"
+                  value={editForm.guild_id}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, guild_id: e.target.value || "" }))
+                  }
+                  className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Enable bot notifications for this campaign. Leave blank to use the webhook only.
+                </p>
+              </div>
+              <input
+                id="notification_channel_id"
+                type="text"
+                placeholder="Bot notification channel ID (optional)"
+                value={editForm.notification_channel_id}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, notification_channel_id: e.target.value || "" }))
                 }
                 className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
