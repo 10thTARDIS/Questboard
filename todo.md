@@ -30,7 +30,7 @@ Things that still need doing:
 
 ## Still Outstanding
 
-- [ ] Add Apple Calendar link to confirmed session calendar section (Apple Calendar uses the same .ics file; add a direct webcal:// link alongside the existing .ics download)
+- [x] Add Apple Calendar link to confirmed session calendar section (Apple Calendar uses the same .ics file; add a direct webcal:// link alongside the existing .ics download)
 
 ## New Items for v1 — Completed
 

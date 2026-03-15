@@ -514,6 +514,12 @@ export default function SessionDetail() {
                 Download .ics
               </a>
               <a
+                href={`webcal://${window.location.host}/api/sessions/${id}/calendar.ics`}
+                className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:border-gray-500 hover:text-white transition"
+              >
+                Apple Calendar
+              </a>
+              <a
                 href={googleCalendarUrl(session)}
                 target="_blank"
                 rel="noopener noreferrer"

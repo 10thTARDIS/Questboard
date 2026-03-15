@@ -9,7 +9,11 @@ Versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-_Nothing yet._
+### Added
+- Apple Calendar (`webcal://`) link alongside the existing `.ics` download on
+  confirmed sessions
+- Dependabot configuration: weekly PRs for Python, npm, and GitHub Actions
+  dependencies
 
 ---
 
