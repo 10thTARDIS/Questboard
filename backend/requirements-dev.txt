@@ -8,7 +8,7 @@ httpx==0.28.1
 
 # ── Linting / formatting ───────────────────────────────────────────────────────
 ruff==0.9.1
-black==24.10.0
+black==26.3.1
 
 # ── Security auditing ─────────────────────────────────────────────────────────
 # Run manually or as a pre-commit hook: pip-audit
