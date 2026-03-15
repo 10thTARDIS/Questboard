@@ -21,6 +21,7 @@ class UserResponse(BaseModel):
     avatar_url: str | None = None
     timezone: str | None = None
     is_admin: bool = False
+    recap_email_opt_in: bool = False
     last_login_at: datetime | None = None
     created_at: datetime
 
@@ -32,3 +33,4 @@ class UserUpdate(BaseModel):
 
     display_name_override: str | None = None
     timezone: str | None = None
+    recap_email_opt_in: bool | None = None

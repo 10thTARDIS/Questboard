@@ -221,6 +221,11 @@ async def bot_post_transcript(
     session.transcript_updated_at = datetime.now(timezone.utc)
 
     await db.commit()
+
+    # Fire recap email task for opted-in attendees (no-op if SMTP or opt-ins not configured)
+    from app.tasks.reminder_tasks import send_recap_email
+    send_recap_email.delay(str(session_id))
+
     return {"detail": "Transcript saved"}
 
 

@@ -42,6 +42,7 @@ class CampaignCreate(BaseModel):
     reminder_offsets_minutes: list[int] | None = None
     vote_notification_mode: str | None = None
     vote_auto_close_hours: int | None = None
+    recap_email_enabled: bool | None = None
 
     @field_validator("discord_webhook_url")
     @classmethod
@@ -72,6 +73,7 @@ class CampaignUpdate(BaseModel):
     reminder_offsets_minutes: list[int] | None = None
     vote_notification_mode: str | None = None
     vote_auto_close_hours: int | None = None
+    recap_email_enabled: bool | None = None
 
     @field_validator("discord_webhook_url")
     @classmethod
@@ -121,6 +123,7 @@ class CampaignResponse(BaseModel):
     reminder_offsets_minutes: list[int] | None
     vote_notification_mode: str | None
     vote_auto_close_hours: int | None
+    recap_email_enabled: bool
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -133,9 +136,15 @@ class MemberResponse(BaseModel):
     avatar_url: str | None
     role: MemberRole
     character_name: str | None
+    character_sheet_url: str | None
+    character_sheet_notes: str | None
     joined_at: datetime
+
+    model_config = {"from_attributes": True}
 
 
 class MemberUpdate(BaseModel):
-    """PATCH /{campaign_id}/members/{user_id} — members can set their character name."""
+    """PATCH /{campaign_id}/members/{user_id} — members can update their character info."""
     character_name: str | None = None
+    character_sheet_url: str | None = None
+    character_sheet_notes: str | None = None

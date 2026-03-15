@@ -159,6 +159,119 @@ def send_test_email(self, to_address: str) -> None:
     bind=True,
     max_retries=2,
     default_retry_delay=30,
+    name="app.tasks.reminder_tasks.send_recap_email",
+)
+def send_recap_email(self, session_id: str) -> None:
+    """Send a post-session recap email to opted-in attendees.
+
+    Fired after the bot uploads a transcript via POST /api/bot/sessions/{id}/transcript.
+    Only sends if:
+      - The campaign has recap_email_enabled = True
+      - The recipient user has recap_email_opt_in = True and has an email address
+      - SMTP is configured
+    """
+    import asyncio
+    import logging
+
+    logger = logging.getLogger(__name__)
+
+    try:
+        from app.database import AsyncSessionLocal
+        from app.models.campaign import Campaign
+        from app.models.session import Session
+        from app.models.session_attendance import SessionAttendance
+        from app.models.user import User
+        from app.services.settings_service import get_smtp_config
+        from sqlalchemy import select
+
+        loop = asyncio.new_event_loop()
+        try:
+            async def _fetch():
+                async with AsyncSessionLocal() as db:
+                    session = await db.get(Session, session_id)
+                    if session is None:
+                        return None
+                    campaign = await db.get(Campaign, session.campaign_id)
+                    if campaign is None or not campaign.recap_email_enabled:
+                        return None
+                    smtp_cfg = await get_smtp_config(db)
+                    if smtp_cfg is None:
+                        return None
+                    # Attendees who opted in and have an email address
+                    att_result = await db.execute(
+                        select(SessionAttendance, User)
+                        .join(User, User.id == SessionAttendance.user_id)
+                        .where(
+                            SessionAttendance.session_id == session.id,
+                            SessionAttendance.attended == True,  # noqa: E712
+                            User.recap_email_opt_in == True,  # noqa: E712
+                            User.email.isnot(None),
+                        )
+                    )
+                    recipients = [(row.User.email, row.User.effective_display_name) for row in att_result]
+                    return {
+                        "session_title": session.title or "Untitled Session",
+                        "campaign_name": campaign.name,
+                        "summary": session.summary or "",
+                        "smtp_cfg": smtp_cfg,
+                        "recipients": recipients,
+                    }
+
+            data = loop.run_until_complete(_fetch())
+        finally:
+            loop.close()
+
+        if not data or not data["recipients"]:
+            return
+
+        from app.notifications.email import email_backend as _email
+        import smtplib, ssl
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
+
+        cfg = data["smtp_cfg"]
+        subject = f"[Quest Board] Session Recap — {data['session_title']}"
+
+        for to_email, display_name in data["recipients"]:
+            html_body = (
+                f"<h2>Session Recap: {data['session_title']}</h2>"
+                f"<p><strong>Campaign:</strong> {data['campaign_name']}</p>"
+                f"<hr>"
+                f"<h3>Summary</h3>"
+                f"<p>{data['summary'].replace(chr(10), '<br>')}</p>"
+                f"<hr><p style='color:#888;font-size:12px;'>Sent by Quest Board · "
+                f"To unsubscribe, uncheck <em>Recap emails</em> in your Profile settings.</p>"
+            )
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"] = cfg.from_address
+            msg["To"] = to_email
+            msg.attach(MIMEText(html_body, "html"))
+            try:
+                if cfg.use_tls:
+                    context = ssl.create_default_context()
+                    with smtplib.SMTP(cfg.host, cfg.port, timeout=15) as server:
+                        server.ehlo()
+                        server.starttls(context=context)
+                        if cfg.username:
+                            server.login(cfg.username, cfg.password)
+                        server.sendmail(cfg.from_address, to_email, msg.as_string())
+                else:
+                    with smtplib.SMTP(cfg.host, cfg.port, timeout=15) as server:
+                        if cfg.username:
+                            server.login(cfg.username, cfg.password)
+                        server.sendmail(cfg.from_address, to_email, msg.as_string())
+            except Exception as exc:
+                logger.warning("Recap email to %s failed: %s", to_email, exc)
+
+    except Exception as exc:
+        raise self.retry(exc=exc)
+
+
+@celery_app.task(
+    bind=True,
+    max_retries=2,
+    default_retry_delay=30,
     name="app.tasks.reminder_tasks.send_vote_notification",
 )
 def send_vote_notification(

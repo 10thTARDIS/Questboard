@@ -13,6 +13,35 @@ _Nothing yet._
 
 ---
 
+## [0.3.1] — 2026-03-15
+
+### Added
+
+- **Post-session recap emails** — when the Discord bot uploads a transcript,
+  an AI-generated summary email is sent to session attendees who have opted in.
+  Two independent opt-ins required: `recap_email_enabled` on the campaign
+  (GM-controlled in campaign settings) and `recap_email_opt_in` on the user
+  (in Profile → Your Profile).  Both default to `false`.  Uses the existing
+  SMTP configuration.
+- **Character sheet storage** — `character_sheet_url` and
+  `character_sheet_notes` fields on campaign members; editable inline in the
+  member list alongside the existing character name.  A "Sheet ↗" link
+  appears next to the character name when a URL is saved.
+- **`docs/ENHANCEMENTS.md`** — backlog of deferred features with descriptions,
+  implementation notes, and priority scores (1–5); includes the FoundryVTT
+  character sheet integration, Matrix bot parity, shareable analytics links,
+  automated DB backups, and email digest.
+
+### Migration
+
+Run `alembic upgrade head` to apply migration `a1b2c3d4e5f6` which adds:
+- `campaign_members.character_sheet_url` (Text, nullable)
+- `campaign_members.character_sheet_notes` (Text, nullable)
+- `campaigns.recap_email_enabled` (Boolean, default false)
+- `users.recap_email_opt_in` (Boolean, default false)
+
+---
+
 ## [0.3.0] — 2026-03-15
 
 ### Added
@@ -188,7 +217,8 @@ app-side foundations required for v2.0 Discord bot integration.
 
 ---
 
-[Unreleased]: https://github.com/10thTARDIS/Questboard/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/10thTARDIS/Questboard/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/10thTARDIS/Questboard/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/10thTARDIS/Questboard/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/10thTARDIS/Questboard/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/10thTARDIS/Questboard/compare/v0.1.1...v0.2.0

@@ -59,6 +59,7 @@ export default function Profile() {
   const [form, setForm] = useState({
     display_name_override: user?.display_name_override ?? "",
     timezone: user?.timezone ?? "",
+    recap_email_opt_in: user?.recap_email_opt_in ?? false,
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -90,6 +91,7 @@ export default function Profile() {
       await updateMe({
         display_name_override: form.display_name_override || null,
         timezone: form.timezone || null,
+        recap_email_opt_in: form.recap_email_opt_in,
       });
       if (refreshUser) await refreshUser();
       setSaved(true);
@@ -180,6 +182,25 @@ export default function Profile() {
                   <option key={tz} value={tz}>{tz}</option>
                 ))}
               </select>
+            </div>
+
+            <div className="flex items-start gap-3">
+              <input
+                id="recap_email_opt_in"
+                type="checkbox"
+                checked={form.recap_email_opt_in}
+                onChange={(e) => setForm((f) => ({ ...f, recap_email_opt_in: e.target.checked }))}
+                className="mt-0.5 h-4 w-4 rounded border-gray-600 bg-gray-800 text-indigo-500 focus:ring-indigo-500"
+              />
+              <div>
+                <label htmlFor="recap_email_opt_in" className="text-sm text-gray-300 cursor-pointer">
+                  Receive post-session recap emails
+                </label>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  When the bot uploads a session transcript, receive an AI-generated summary
+                  to your account email. Requires SMTP to be configured by an admin.
+                </p>
+              </div>
             </div>
 
             {error && <p className="text-sm text-red-400">{error}</p>}

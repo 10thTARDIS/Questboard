@@ -83,13 +83,17 @@ Things that still need doing:
 - Repeat-appearance NPCs surface automatically in the v2 Campaign Milestones feed
 
 ### Automated Post-Session Recap Email
-- After a session is completed and transcribed (v2), send an AI-generated summary email to attendees
-- Opt-in per user (profile setting) AND per campaign (campaign setting); defaults to off for both
+- [x] After a session is completed and transcribed (v2), send an AI-generated summary email to attendees
+  (`send_recap_email` Celery task; fired from `POST /api/bot/sessions/{id}/transcript`)
+- [x] Opt-in per user (profile setting) AND per campaign (campaign setting); defaults to off for both
+  (`recap_email_opt_in` on User; `recap_email_enabled` on Campaign; both settable in UI)
 
 ### Character Sheet Storage
-- Link to or embed character sheet data per campaign member
-- Investigate FoundryVTT API / compendium export for direct integration so character sheets can be pulled from an active Foundry world
-- Fallback: freeform URL or key/value fields for users on other platforms
+- [x] Link to or embed character sheet data per campaign member
+  (`character_sheet_url` + `character_sheet_notes` on `campaign_members`; editable inline in CampaignDetail)
+- [ ] Investigate FoundryVTT API / compendium export for direct integration
+  *(deferred — see docs/ENHANCEMENTS.md)*
+- [x] Fallback: freeform URL + notes fields for users on other platforms
 
 ### Campaign Analytics Dashboard
 - [x] Player attendance rates, session frequency, average session gap, vote participation rates per campaign

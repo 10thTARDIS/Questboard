@@ -96,9 +96,11 @@ export default function CampaignDetail() {
   const [editError, setEditError] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  // Character name editing state
+  // Character info editing state
   const [editingCharName, setEditingCharName] = useState(false);
   const [charNameInput, setCharNameInput] = useState("");
+  const [charSheetUrlInput, setCharSheetUrlInput] = useState("");
+  const [charSheetNotesInput, setCharSheetNotesInput] = useState("");
   const [savingCharName, setSavingCharName] = useState(false);
 
   // Misc action state
@@ -142,9 +144,12 @@ export default function CampaignDetail() {
           reminders: (c.reminder_offsets_minutes ?? []).map(minutesToReminder),
           vote_notification_mode: c.vote_notification_mode ?? "",
           vote_auto_close_hours: c.vote_auto_close_hours ?? "",
+          recap_email_enabled: c.recap_email_enabled ?? false,
         });
         const myMember = m.find((mem) => mem.user_id === user?.id);
         setCharNameInput(myMember?.character_name ?? "");
+        setCharSheetUrlInput(myMember?.character_sheet_url ?? "");
+        setCharSheetNotesInput(myMember?.character_sheet_notes ?? "");
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -168,6 +173,7 @@ export default function CampaignDetail() {
         reminder_offsets_minutes: minutesList.length > 0 ? minutesList : null,
         vote_notification_mode: editForm.vote_notification_mode || null,
         vote_auto_close_hours: autoCloseHours > 0 ? autoCloseHours : null,
+        recap_email_enabled: editForm.recap_email_enabled,
       });
       setCampaign(updated);
       setEditing(false);
@@ -184,9 +190,16 @@ export default function CampaignDetail() {
     try {
       const updated = await updateMember(id, user.id, {
         character_name: charNameInput.trim() || null,
+        character_sheet_url: charSheetUrlInput.trim() || null,
+        character_sheet_notes: charSheetNotesInput.trim() || null,
       });
       setMembers((prev) =>
-        prev.map((m) => (m.user_id === user.id ? { ...m, character_name: updated.character_name } : m))
+        prev.map((m) => (m.user_id === user.id ? {
+          ...m,
+          character_name: updated.character_name,
+          character_sheet_url: updated.character_sheet_url,
+          character_sheet_notes: updated.character_sheet_notes,
+        } : m))
       );
       setEditingCharName(false);
     } catch (e) {
@@ -594,6 +607,26 @@ export default function CampaignDetail() {
                 />
               </div>
 
+              <div className="flex items-start gap-3 pt-1">
+                <input
+                  id="recap_email_enabled"
+                  type="checkbox"
+                  checked={editForm.recap_email_enabled}
+                  onChange={(e) =>
+                    setEditForm((f) => ({ ...f, recap_email_enabled: e.target.checked }))
+                  }
+                  className="mt-0.5 h-4 w-4 rounded border-gray-600 bg-gray-800 text-indigo-500 focus:ring-indigo-500"
+                />
+                <div>
+                  <label htmlFor="recap_email_enabled" className="text-sm text-gray-300 cursor-pointer">
+                    Send post-session recap emails
+                  </label>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    When the bot uploads a transcript, email a summary to attendees who have opted in on their profile.
+                  </p>
+                </div>
+              </div>
+
               {editError && <p className="text-sm text-red-400">{editError}</p>}
               <div className="flex gap-2 justify-end">
                 <button
@@ -679,6 +712,17 @@ export default function CampaignDetail() {
                     {m.character_name && (
                       <span className="ml-1.5 text-xs text-indigo-400">as {m.character_name}</span>
                     )}
+                    {m.character_sheet_url && (
+                      <a
+                        href={m.character_sheet_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-1.5 text-xs text-gray-500 hover:text-indigo-400 transition"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Sheet ↗
+                      </a>
+                    )}
                     {m.user_id === user?.id && (
                       <span className="ml-1.5 text-xs text-gray-500">(you)</span>
                     )}
@@ -696,20 +740,36 @@ export default function CampaignDetail() {
                   </span>
                   {m.user_id === user?.id && (
                     editingCharName ? (
-                      <form onSubmit={handleSaveCharName} className="flex items-center gap-1">
+                      <form onSubmit={handleSaveCharName} className="mt-2 space-y-2 w-full">
                         <input
                           autoFocus
                           placeholder="Character name"
                           value={charNameInput}
                           onChange={(e) => setCharNameInput(e.target.value)}
-                          className="rounded bg-gray-700 px-2 py-0.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 w-32"
+                          className="w-full rounded bg-gray-700 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                         />
-                        <button type="submit" disabled={savingCharName} className="text-xs text-indigo-400 hover:text-indigo-300 transition">
-                          {savingCharName ? "…" : "Save"}
-                        </button>
-                        <button type="button" onClick={() => setEditingCharName(false)} className="text-xs text-gray-500 hover:text-gray-300 transition">
-                          ✕
-                        </button>
+                        <input
+                          type="url"
+                          placeholder="Character sheet URL (optional)"
+                          value={charSheetUrlInput}
+                          onChange={(e) => setCharSheetUrlInput(e.target.value)}
+                          className="w-full rounded bg-gray-700 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        />
+                        <textarea
+                          placeholder="Character notes (optional)"
+                          value={charSheetNotesInput}
+                          onChange={(e) => setCharSheetNotesInput(e.target.value)}
+                          rows={2}
+                          className="w-full rounded bg-gray-700 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+                        />
+                        <div className="flex gap-2">
+                          <button type="submit" disabled={savingCharName} className="text-xs text-indigo-400 hover:text-indigo-300 transition">
+                            {savingCharName ? "Saving…" : "Save"}
+                          </button>
+                          <button type="button" onClick={() => setEditingCharName(false)} className="text-xs text-gray-500 hover:text-gray-300 transition">
+                            Cancel
+                          </button>
+                        </div>
                       </form>
                     ) : (
                       <button
