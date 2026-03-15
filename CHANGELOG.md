@@ -34,7 +34,7 @@ _Nothing yet._
 
 ### Migration
 
-Run `alembic upgrade head` to apply migration `a1b2c3d4e5f6` which adds:
+Run `alembic upgrade head` to apply migration `98520cae8a4b` which adds:
 - `campaign_members.character_sheet_url` (Text, nullable)
 - `campaign_members.character_sheet_notes` (Text, nullable)
 - `campaigns.recap_email_enabled` (Boolean, default false)
