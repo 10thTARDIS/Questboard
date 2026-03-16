@@ -19,7 +19,7 @@ import {
   saveNotificationSettings,
   sendTestEmail,
 } from "../api/sessions.js";
-import { fetchBotSettings, regenerateBotApiKey, saveBotSettings } from "../api/users.js";
+import { fetchBotSettings, pingBot, regenerateBotApiKey, saveBotSettings } from "../api/users.js";
 
 function fmt(iso) {
   if (!iso) return "Never";
@@ -282,6 +282,8 @@ function BotSettings() {
   const [newKey, setNewKey] = useState(null);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [pingStatus, setPingStatus] = useState(null); // null | {reachable, latency_ms?, error?}
+  const [pinging, setPinging] = useState(false);
 
   const [form, setForm] = useState({
     bot_token: "",
@@ -292,6 +294,19 @@ function BotSettings() {
     llm_api_key: "",
     llm_model: "",
   });
+
+  const checkConnection = async () => {
+    setPinging(true);
+    setPingStatus(null);
+    try {
+      const result = await pingBot();
+      setPingStatus(result);
+    } catch {
+      setPingStatus({ reachable: false, error: "Request failed" });
+    } finally {
+      setPinging(false);
+    }
+  };
 
   useEffect(() => {
     fetchBotSettings()
@@ -304,6 +319,12 @@ function BotSettings() {
           llm_endpoint_url: s.llm_endpoint_url || "",
           llm_model: s.llm_model || "",
         }));
+        if (s.bot_url) {
+          // Auto-check on load if a URL is configured
+          pingBot()
+            .then(setPingStatus)
+            .catch(() => setPingStatus({ reachable: false, error: "Request failed" }));
+        }
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
@@ -404,6 +425,35 @@ function BotSettings() {
           placeholder="http://questboard-bot:8080"
           className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
+        <div className="mt-2 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={checkConnection}
+            disabled={pinging || !form.bot_url}
+            className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500 disabled:opacity-50 transition"
+          >
+            {pinging ? "Checking…" : "Check connection"}
+          </button>
+          {pingStatus && !pinging && (
+            pingStatus.reachable ? (
+              <span className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400">
+                <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+                Connected
+                {pingStatus.latency_ms != null && (
+                  <span className="text-gray-500">({pingStatus.latency_ms} ms)</span>
+                )}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400">
+                <span className="inline-block h-2 w-2 rounded-full bg-red-500" />
+                Unreachable
+                {pingStatus.error && (
+                  <span className="text-gray-500">— {pingStatus.error}</span>
+                )}
+              </span>
+            )
+          )}
+        </div>
       </div>
 
       {/* Discord bot token */}

@@ -406,3 +406,41 @@ async def admin_regenerate_bot_api_key(
     new_key = secrets.token_hex(32)
     await settings_service.set_setting(db, settings_service.KEY_BOT_API_KEY, {"key": new_key})
     return {"api_key": new_key}
+
+
+@router.get("/admin/settings/bot/ping", response_model=dict)
+async def admin_bot_ping(
+    _: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Ping the configured bot URL and return reachability status (admin only).
+
+    Makes a GET request to {bot_url}/health from the server side and returns
+    whether it responded, the HTTP status code, and round-trip latency.
+    """
+    import time
+    import httpx
+
+    bot_url = await settings_service.get_bot_url(db)
+    if not bot_url:
+        return {"reachable": False, "error": "No bot URL configured"}
+
+    bot_key = await settings_service.get_bot_api_key(db) or ""
+    start = time.monotonic()
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get(
+                f"{bot_url.rstrip('/')}/health",
+                headers={"X-Bot-Key": bot_key},
+                timeout=5.0,
+            )
+        latency_ms = int((time.monotonic() - start) * 1000)
+        if resp.status_code == 200:
+            return {"reachable": True, "latency_ms": latency_ms}
+        return {"reachable": False, "error": f"HTTP {resp.status_code}", "latency_ms": latency_ms}
+    except httpx.ConnectError:
+        return {"reachable": False, "error": "Connection refused"}
+    except httpx.TimeoutException:
+        return {"reachable": False, "error": "Timed out after 5 s"}
+    except Exception as exc:
+        return {"reachable": False, "error": str(exc)}

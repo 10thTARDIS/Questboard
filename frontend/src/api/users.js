@@ -46,3 +46,6 @@ export const saveBotSettings = (data) =>
 
 export const regenerateBotApiKey = () =>
   request("/api/admin/settings/bot/regenerate-key", { method: "POST" });
+
+export const pingBot = () =>
+  request("/api/admin/settings/bot/ping");
