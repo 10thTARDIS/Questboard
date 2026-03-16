@@ -285,6 +285,7 @@ function BotSettings() {
 
   const [form, setForm] = useState({
     bot_token: "",
+    bot_url: "",
     whisper_endpoint_url: "",
     whisper_api_key: "",
     llm_endpoint_url: "",
@@ -298,6 +299,7 @@ function BotSettings() {
         setSettings(s);
         setForm((f) => ({
           ...f,
+          bot_url: s.bot_url || "",
           whisper_endpoint_url: s.whisper_endpoint_url || "",
           llm_endpoint_url: s.llm_endpoint_url || "",
           llm_model: s.llm_model || "",
@@ -383,6 +385,25 @@ function BotSettings() {
         >
           {regenerating ? "Generating…" : settings?.api_key_configured ? "Regenerate Key" : "Generate Key"}
         </button>
+      </div>
+
+      {/* Bot URL */}
+      <div>
+        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">
+          Bot URL
+        </label>
+        <p className="text-xs text-gray-500 dark:text-gray-500 mb-2">
+          HTTP base URL of the questboard-bot server (e.g. <span className="font-mono">http://questboard-bot:8080</span>).
+          When set, campaigns with a Discord Server ID configured will send notifications to the bot
+          instead of the Discord webhook.
+        </p>
+        <input
+          type="url"
+          value={form.bot_url}
+          onChange={(e) => setForm((f) => ({ ...f, bot_url: e.target.value }))}
+          placeholder="http://questboard-bot:8080"
+          className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
       </div>
 
       {/* Discord bot token */}

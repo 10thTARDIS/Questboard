@@ -85,6 +85,7 @@ class PlatformLinkCreate(BaseModel):
 
 class BotSettingsRequest(BaseModel):
     bot_token: str = ""
+    bot_url: str = ""
     whisper_endpoint_url: str = ""
     whisper_api_key: str = ""
     llm_endpoint_url: str = ""
@@ -94,6 +95,7 @@ class BotSettingsRequest(BaseModel):
 
 class BotSettingsResponse(BaseModel):
     bot_token_configured: bool
+    bot_url: str
     whisper_endpoint_url: str
     whisper_configured: bool
     llm_endpoint_url: str
@@ -314,9 +316,11 @@ def _build_bot_settings_response(
     whisper_raw: dict | None,
     llm_raw: dict | None,
     api_key_raw: dict | None,
+    bot_url: str = "",
 ) -> BotSettingsResponse:
     return BotSettingsResponse(
         bot_token_configured=bool(bot_raw and bot_raw.get("token")),
+        bot_url=bot_url,
         whisper_endpoint_url=(whisper_raw or {}).get("endpoint_url", ""),
         whisper_configured=bool(whisper_raw and whisper_raw.get("endpoint_url")),
         llm_endpoint_url=(llm_raw or {}).get("endpoint_url", ""),
@@ -336,7 +340,8 @@ async def admin_get_bot_settings(
     whisper_raw = await settings_service.get_setting(db, settings_service.KEY_WHISPER)
     llm_raw = await settings_service.get_setting(db, settings_service.KEY_LLM)
     api_key_raw = await settings_service.get_setting(db, settings_service.KEY_BOT_API_KEY)
-    return _build_bot_settings_response(bot_raw, whisper_raw, llm_raw, api_key_raw)
+    bot_url = await settings_service.get_bot_url(db)
+    return _build_bot_settings_response(bot_raw, whisper_raw, llm_raw, api_key_raw, bot_url)
 
 
 @router.put("/admin/settings/bot", response_model=BotSettingsResponse)
@@ -352,6 +357,11 @@ async def admin_set_bot_settings(
         settings_service.KEY_BOT_TOKEN,
         {"token": data.bot_token if data.bot_token else (existing_bot or {}).get("token", "")},
     )
+
+    if data.bot_url is not None:
+        existing_url = await settings_service.get_setting(db, settings_service.KEY_BOT_URL)
+        new_url = data.bot_url.strip() if data.bot_url.strip() else (existing_url or {}).get("url", "")
+        await settings_service.set_setting(db, settings_service.KEY_BOT_URL, {"url": new_url})
 
     existing_whisper = await settings_service.get_setting(db, settings_service.KEY_WHISPER)
     await settings_service.set_setting(
@@ -378,7 +388,8 @@ async def admin_set_bot_settings(
     whisper_raw = await settings_service.get_setting(db, settings_service.KEY_WHISPER)
     llm_raw = await settings_service.get_setting(db, settings_service.KEY_LLM)
     api_key_raw = await settings_service.get_setting(db, settings_service.KEY_BOT_API_KEY)
-    return _build_bot_settings_response(bot_raw, whisper_raw, llm_raw, api_key_raw)
+    bot_url = await settings_service.get_bot_url(db)
+    return _build_bot_settings_response(bot_raw, whisper_raw, llm_raw, api_key_raw, bot_url)
 
 
 @router.post("/admin/settings/bot/regenerate-key", response_model=dict)

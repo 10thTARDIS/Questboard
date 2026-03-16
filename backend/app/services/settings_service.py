@@ -21,6 +21,7 @@ KEY_BOT_TOKEN = "discord_bot_token"
 KEY_WHISPER = "whisper_config"
 KEY_LLM = "llm_config"
 KEY_BOT_API_KEY = "bot_api_key"
+KEY_BOT_URL = "bot_url"
 
 
 # ── Generic get/set ────────────────────────────────────────────────────────────
@@ -130,6 +131,19 @@ async def get_bot_api_key(db: AsyncSession) -> str | None:
     if not value or not value.get("key"):
         return None
     return value["key"]
+
+
+async def get_bot_url(db: AsyncSession) -> str:
+    """Return the Questboard-bot HTTP URL.
+
+    Checks the database first; falls back to the QUESTBOARD_BOT_URL
+    environment variable so existing deployments keep working.
+    """
+    value = await get_setting(db, KEY_BOT_URL)
+    if value and value.get("url"):
+        return value["url"]
+    import os
+    return os.environ.get("QUESTBOARD_BOT_URL", "")
 
 
 async def get_discord_webhook_fallback(db: AsyncSession) -> str | None:

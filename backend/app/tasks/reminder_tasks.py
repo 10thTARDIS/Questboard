@@ -28,26 +28,27 @@ def send_session_reminder(
     guild_id: str = "",
     notification_channel_id: str = "",
     campaign_id: str = "",
+    bot_url: str = "",
+    bot_key: str = "",
 ) -> None:
     """Send a reminder notification before a confirmed session.
 
     Scheduled with ETAs of 7 days / 24 hours / 1 hour before the session.
     All data is passed as arguments so no DB access is needed in the task.
-    If the campaign has a guild_id and questboard_bot_url is configured,
-    the notification is routed to the bot instead of the webhook.
+    If the campaign has a guild_id and bot_url is set, the notification is
+    routed to the bot instead of the webhook.
     """
     try:
-        from app.config import settings as _settings
         confirmed_time = datetime.fromisoformat(confirmed_time_iso).replace(
             tzinfo=timezone.utc
         )
         title = session_title or "Untitled Session"
 
-        if guild_id and _settings.questboard_bot_url:
+        if guild_id and bot_url:
             import httpx as _httpx
             try:
                 _httpx.post(
-                    f"{_settings.questboard_bot_url}/notify",
+                    f"{bot_url}/notify",
                     json={
                         "event_type": "session_reminder",
                         "session_id": session_id,
@@ -59,7 +60,7 @@ def send_session_reminder(
                             "hours_until": hours_until,
                         },
                     },
-                    headers={"X-Bot-Key": _settings.bot_api_key},
+                    headers={"X-Bot-Key": bot_key},
                     timeout=10,
                 )
             except Exception as exc:
@@ -96,24 +97,25 @@ def send_session_confirmed(
     guild_id: str = "",
     notification_channel_id: str = "",
     campaign_id: str = "",
+    bot_url: str = "",
+    bot_key: str = "",
 ) -> None:
     """Notify members immediately when a session is confirmed.
 
-    If the campaign has a guild_id and questboard_bot_url is configured,
-    the notification is routed to the bot instead of the webhook.
+    If the campaign has a guild_id and bot_url is set, the notification is
+    routed to the bot instead of the webhook.
     """
     try:
-        from app.config import settings as _settings
         confirmed_time = datetime.fromisoformat(confirmed_time_iso).replace(
             tzinfo=timezone.utc
         )
         title = session_title or "Untitled Session"
 
-        if guild_id and _settings.questboard_bot_url:
+        if guild_id and bot_url:
             import httpx as _httpx
             try:
                 _httpx.post(
-                    f"{_settings.questboard_bot_url}/notify",
+                    f"{bot_url}/notify",
                     json={
                         "event_type": "session_confirmed",
                         "session_id": session_id,
@@ -122,7 +124,7 @@ def send_session_confirmed(
                         "channel_id": notification_channel_id,
                         "extra": {"confirmed_time": confirmed_time_iso},
                     },
-                    headers={"X-Bot-Key": _settings.bot_api_key},
+                    headers={"X-Bot-Key": bot_key},
                     timeout=10,
                 )
             except Exception as exc:
@@ -428,15 +430,16 @@ def send_session_proposed(
     guild_id: str,
     notification_channel_id: str,
     slot_ids: list[str],
+    bot_url: str = "",
+    bot_key: str = "",
 ) -> None:
     """Notify the bot when a vote-mode session is proposed."""
-    from app.config import settings as _settings
-    if not guild_id or not _settings.questboard_bot_url:
+    if not guild_id or not bot_url:
         return
     import httpx as _httpx
     try:
         resp = _httpx.post(
-            f"{_settings.questboard_bot_url}/notify",
+            f"{bot_url}/notify",
             json={
                 "event_type": "session_proposed",
                 "session_id": session_id,
@@ -449,7 +452,7 @@ def send_session_proposed(
                     "campaign_name": campaign_name,
                 },
             },
-            headers={"X-Bot-Key": _settings.bot_api_key},
+            headers={"X-Bot-Key": bot_key},
             timeout=10,
         )
         resp.raise_for_status()
@@ -471,15 +474,16 @@ def send_session_cancelled(
     session_title: str,
     guild_id: str,
     notification_channel_id: str,
+    bot_url: str = "",
+    bot_key: str = "",
 ) -> None:
     """Notify the bot when a session is cancelled."""
-    from app.config import settings as _settings
-    if not guild_id or not _settings.questboard_bot_url:
+    if not guild_id or not bot_url:
         return
     import httpx as _httpx
     try:
         resp = _httpx.post(
-            f"{_settings.questboard_bot_url}/notify",
+            f"{bot_url}/notify",
             json={
                 "event_type": "session_cancelled",
                 "session_id": session_id,
@@ -488,7 +492,7 @@ def send_session_cancelled(
                 "channel_id": notification_channel_id,
                 "extra": {"title": session_title, "campaign_name": campaign_name},
             },
-            headers={"X-Bot-Key": _settings.bot_api_key},
+            headers={"X-Bot-Key": bot_key},
             timeout=10,
         )
         resp.raise_for_status()

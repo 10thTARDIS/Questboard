@@ -9,6 +9,7 @@ from sqlalchemy.orm import selectinload
 
 from app.config import settings
 from app.models.campaign import Campaign
+from app.services import settings_service
 from app.models.session import SchedulingMode, Session, SessionStatus
 from app.models.timeslot import TimeSlot
 from app.models.user import User
@@ -26,6 +27,8 @@ def _schedule_reminders(
     session: Session,
     campaign: Campaign,
     confirmed_time: datetime,
+    bot_url: str = "",
+    bot_key: str = "",
 ) -> list[str]:
     """Schedule Celery tasks and return the list of task IDs.
 
@@ -36,7 +39,7 @@ def _schedule_reminders(
     # Import here to avoid circular imports at module load time
     from app.tasks.reminder_tasks import send_session_confirmed, send_session_reminder
 
-    use_bot = bool(campaign.guild_id and settings.questboard_bot_url)
+    use_bot = bool(campaign.guild_id and bot_url)
     webhook_url = _effective_webhook(campaign)
     if not use_bot and not webhook_url:
         return []
@@ -57,6 +60,8 @@ def _schedule_reminders(
         guild_id=campaign.guild_id or "",
         notification_channel_id=campaign.notification_channel_id or "",
         campaign_id=str(campaign.id),
+        bot_url=bot_url,
+        bot_key=bot_key,
     )
 
     # Timed reminders — use campaign-level offsets if set, otherwise default (7d/24h/1h)
@@ -84,6 +89,8 @@ def _schedule_reminders(
                 "guild_id": campaign.guild_id or "",
                 "notification_channel_id": campaign.notification_channel_id or "",
                 "campaign_id": str(campaign.id),
+                "bot_url": bot_url,
+                "bot_key": bot_key,
             },
             eta=eta,
         )
@@ -162,9 +169,11 @@ async def create_session(
 
     campaign = await db.get(Campaign, campaign_id)
     if campaign:
+        bot_url = await settings_service.get_bot_url(db)
+        bot_key = await settings_service.get_bot_api_key(db) or ""
         if is_direct:
             # Direct mode: confirm and schedule reminders immediately
-            task_ids = _schedule_reminders(session, campaign, data.proposed_times[0])
+            task_ids = _schedule_reminders(session, campaign, data.proposed_times[0], bot_url, bot_key)
             if task_ids:
                 session.celery_task_ids = task_ids
         elif data.scheduling_mode == SchedulingMode.vote:
@@ -173,7 +182,7 @@ async def create_session(
             if task_id:
                 session.vote_close_task_id = task_id
             # Notify bot of proposed session if bot routing is configured
-            if campaign.guild_id and settings.questboard_bot_url:
+            if campaign.guild_id and bot_url:
                 await db.flush()  # ensure time slots have IDs
                 slots_result = await db.execute(
                     select(TimeSlot)
@@ -190,6 +199,8 @@ async def create_session(
                     campaign.guild_id,
                     campaign.notification_channel_id or "",
                     slot_ids,
+                    bot_url,
+                    bot_key,
                 )
 
     await db.commit()
@@ -294,16 +305,21 @@ async def cancel_session(db: AsyncSession, session: Session) -> Session:
     _revoke_vote_close(session)
     session.status = SessionStatus.cancelled
     campaign = await db.get(Campaign, session.campaign_id)
-    if campaign and campaign.guild_id and settings.questboard_bot_url:
-        from app.tasks.reminder_tasks import send_session_cancelled
-        send_session_cancelled.delay(
-            str(session.id),
-            str(session.campaign_id),
-            campaign.name,
-            session.title or "Untitled Session",
-            campaign.guild_id,
-            campaign.notification_channel_id or "",
-        )
+    if campaign and campaign.guild_id:
+        bot_url = await settings_service.get_bot_url(db)
+        if bot_url:
+            bot_key = await settings_service.get_bot_api_key(db) or ""
+            from app.tasks.reminder_tasks import send_session_cancelled
+            send_session_cancelled.delay(
+                str(session.id),
+                str(session.campaign_id),
+                campaign.name,
+                session.title or "Untitled Session",
+                campaign.guild_id,
+                campaign.notification_channel_id or "",
+                bot_url,
+                bot_key,
+            )
     await db.commit()
     return await get_session_with_slots(db, session.id)  # type: ignore[return-value]
 
@@ -351,7 +367,9 @@ async def confirm_session(
     # Schedule new reminders
     campaign = await db.get(Campaign, session.campaign_id)
     if campaign:
-        task_ids = _schedule_reminders(session, campaign, confirmed_time)
+        bot_url = await settings_service.get_bot_url(db)
+        bot_key = await settings_service.get_bot_api_key(db) or ""
+        task_ids = _schedule_reminders(session, campaign, confirmed_time, bot_url, bot_key)
         if task_ids:
             session.celery_task_ids = task_ids
 

@@ -39,6 +39,29 @@ must be network-accessible from the Quest Board server.
 
 ## Bot Features
 
+### Redis Pub/Sub for Questboard → Bot Notifications
+
+**Priority: 3**
+
+**Description:**
+Currently Questboard notifies the bot via HTTP POST to the bot's `/notify` endpoint. Switching to
+Redis pub/sub would remove the need for the bot to expose an HTTP port and decouple the two
+services — Questboard publishes an event to a `questboard:events` channel, and the bot maintains a
+subscriber coroutine. This only makes sense if both services share the same Redis instance.
+
+**Why deferred:** The bot is currently deployed on a separate host from Questboard. If the two
+services are ever co-located in a single Docker Compose deployment sharing a Redis instance, this
+becomes a low-complexity improvement.
+
+**Implementation notes:**
+- Replace `httpx.post(bot_url/notify, ...)` in Celery tasks with `redis.publish("questboard:events", json)`
+- Bot adds a background `pubsub.subscribe("questboard:events")` listener at startup
+- `bot_url` and `BOT_API_KEY` config becomes unnecessary for the notification path (bot → Questboard
+  API calls for link lookup / link status remain HTTP)
+- Consider Redis Streams instead of pub/sub if delivery-on-reconnect is needed
+
+---
+
 ### Bot-Proposed Lore Entries
 
 **Priority: 2**
