@@ -21,8 +21,8 @@ export default class ErrorBoundary extends Component {
     if (!this.state.hasError) return this.props.children;
 
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-950 gap-4 px-6 text-center">
-        <p className="text-2xl font-bold text-white">Something went wrong.</p>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-white dark:bg-gray-950 gap-4 px-6 text-center">
+        <p className="text-2xl font-bold text-gray-900 dark:text-white">Something went wrong.</p>
         {this.state.message && (
           <p className="text-sm text-gray-500 max-w-md">{this.state.message}</p>
         )}
@@ -35,7 +35,7 @@ export default class ErrorBoundary extends Component {
           </button>
           <a
             href="/dashboard"
-            className="rounded-lg border border-gray-700 px-4 py-2 text-sm hover:border-gray-500 transition"
+            className="rounded-lg border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm hover:border-gray-400 dark:hover:border-gray-500 transition"
           >
             Go to dashboard
           </a>

@@ -15,10 +15,10 @@ function pct(rate) {
 
 function StatCard({ label, value, sub }) {
   return (
-    <div className="rounded-xl border border-gray-800 bg-gray-900 px-5 py-4">
+    <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 px-5 py-4">
       <p className="text-2xl font-bold">{value}</p>
-      <p className="text-sm text-gray-400 mt-0.5">{label}</p>
-      {sub && <p className="text-xs text-gray-600 mt-1">{sub}</p>}
+      <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{label}</p>
+      {sub && <p className="text-xs text-gray-500 dark:text-gray-600 mt-1">{sub}</p>}
     </div>
   );
 }
@@ -43,7 +43,7 @@ export default function CampaignAnalytics() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white flex items-center justify-center">
         <p className="text-gray-500">Loading analytics…</p>
       </div>
     );
@@ -51,7 +51,7 @@ export default function CampaignAnalytics() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white flex items-center justify-center">
         <p className="text-red-400">{error}</p>
       </div>
     );
@@ -60,13 +60,13 @@ export default function CampaignAnalytics() {
   const a = analytics;
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+      <header className="border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link to={`/campaigns/${campaignId}`} className="text-gray-500 hover:text-white transition text-sm">
+          <Link to={`/campaigns/${campaignId}`} className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition text-sm">
             ← {campaign?.name ?? "Campaign"}
           </Link>
-          <span className="text-gray-700">/</span>
+          <span className="text-gray-400 dark:text-gray-700">/</span>
           <span className="font-semibold">Analytics</span>
         </div>
         <NavBar />
@@ -76,7 +76,7 @@ export default function CampaignAnalytics() {
 
         {/* Session overview */}
         <section>
-          <h2 className="text-sm font-medium text-gray-400 mb-3">Sessions</h2>
+          <h2 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Sessions</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <StatCard label="Total" value={a.total_sessions} />
             <StatCard label="Completed" value={a.completed_sessions} />
@@ -87,7 +87,7 @@ export default function CampaignAnalytics() {
 
         {/* Frequency */}
         <section>
-          <h2 className="text-sm font-medium text-gray-400 mb-3">Frequency</h2>
+          <h2 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Frequency</h2>
           <div className="grid grid-cols-2 gap-3">
             <StatCard
               label="Avg. gap between sessions"
@@ -103,14 +103,14 @@ export default function CampaignAnalytics() {
 
         {/* Member stats */}
         <section>
-          <h2 className="text-sm font-medium text-gray-400 mb-3">Members</h2>
+          <h2 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Members</h2>
           {a.members.length === 0 ? (
             <p className="text-sm text-gray-500">No members found.</p>
           ) : (
-            <div className="rounded-xl border border-gray-800 overflow-hidden">
+            <div className="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-800 text-gray-500 text-xs uppercase">
+                  <tr className="border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-500 text-xs uppercase">
                     <th className="px-4 py-3 text-left font-medium">Member</th>
                     <th className="px-4 py-3 text-center font-medium">Attendance</th>
                     <th className="px-4 py-3 text-center font-medium">Vote participation</th>
@@ -120,7 +120,7 @@ export default function CampaignAnalytics() {
                   {a.members.map((m, i) => (
                     <tr
                       key={m.user_id}
-                      className={i < a.members.length - 1 ? "border-b border-gray-800" : ""}
+                      className={i < a.members.length - 1 ? "border-b border-gray-200 dark:border-gray-800" : ""}
                     >
                       <td className="px-4 py-3">
                         <span className="font-medium">{m.display_name}</span>
@@ -132,7 +132,7 @@ export default function CampaignAnalytics() {
                         <span className={getRateClass(m.attendance_rate)}>
                           {pct(m.attendance_rate)}
                         </span>
-                        <span className="block text-xs text-gray-600">
+                        <span className="block text-xs text-gray-500 dark:text-gray-600">
                           {m.sessions_attended}/{m.sessions_eligible}
                         </span>
                       </td>
@@ -140,7 +140,7 @@ export default function CampaignAnalytics() {
                         <span className={getRateClass(m.vote_participation_rate)}>
                           {pct(m.vote_participation_rate)}
                         </span>
-                        <span className="block text-xs text-gray-600">
+                        <span className="block text-xs text-gray-500 dark:text-gray-600">
                           {m.vote_sessions_participated}/{m.vote_sessions_eligible}
                         </span>
                       </td>
@@ -150,7 +150,7 @@ export default function CampaignAnalytics() {
               </table>
             </div>
           )}
-          <p className="mt-2 text-xs text-gray-600">
+          <p className="mt-2 text-xs text-gray-500 dark:text-gray-600">
             Attendance and vote participation only count sessions created after each member joined.
           </p>
         </section>

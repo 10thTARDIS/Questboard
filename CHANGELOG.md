@@ -13,6 +13,18 @@ _Nothing yet._
 
 ---
 
+## [0.3.3] — 2026-03-15
+
+### Added
+
+- **Light / dark theme** — the theme toggle now actually works. All pages and
+  components use Tailwind `dark:` variants so the UI switches cleanly between a
+  light palette (white/gray-50 backgrounds, gray-900 text) and the existing dark
+  palette.  The preference is persisted in `localStorage`; new visitors default
+  to dark mode.
+
+---
+
 ## [0.3.2] — 2026-03-15
 
 ### Added
@@ -236,7 +248,8 @@ app-side foundations required for v2.0 Discord bot integration.
 
 ---
 
-[Unreleased]: https://github.com/10thTARDIS/Questboard/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/10thTARDIS/Questboard/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/10thTARDIS/Questboard/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/10thTARDIS/Questboard/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/10thTARDIS/Questboard/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/10thTARDIS/Questboard/compare/v0.2.1...v0.3.0

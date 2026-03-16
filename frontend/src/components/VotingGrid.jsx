@@ -110,13 +110,13 @@ export default function VotingGrid({ session, members, currentUser, initialVotes
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr>
-            <th className="text-left px-3 py-2 text-xs text-gray-500 font-medium">
+            <th className="text-left px-3 py-2 text-xs text-gray-500 dark:text-gray-500 font-medium">
               Time
             </th>
             {displayMembers.map((m) => (
               <th
                 key={m.user_id}
-                className="px-2 py-2 text-xs text-gray-500 font-medium text-center"
+                className="px-2 py-2 text-xs text-gray-500 dark:text-gray-500 font-medium text-center"
               >
                 <span className="block max-w-[56px] truncate" title={m.display_name}>
                   {m.display_name.split(" ")[0]}
@@ -126,7 +126,7 @@ export default function VotingGrid({ session, members, currentUser, initialVotes
                 </span>
               </th>
             ))}
-            <th className="px-3 py-2 text-xs text-gray-500 font-medium text-right">
+            <th className="px-3 py-2 text-xs text-gray-500 dark:text-gray-500 font-medium text-right">
               Score
             </th>
           </tr>
@@ -140,11 +140,11 @@ export default function VotingGrid({ session, members, currentUser, initialVotes
             return (
               <tr
                 key={slot.id}
-                className={`border-t border-gray-800 ${
+                className={`border-t border-gray-200 dark:border-gray-800 ${
                   isWinner ? "bg-green-900/10" : ""
                 }`}
               >
-                <td className="px-3 py-2.5 text-xs text-gray-300 whitespace-nowrap">
+                <td className="px-3 py-2.5 text-xs text-gray-700 dark:text-gray-300 whitespace-nowrap">
                   {fmt(slot.proposed_time)}
                   {isWinner && (
                     <span className="ml-1.5 text-green-500">★</span>
@@ -169,7 +169,7 @@ export default function VotingGrid({ session, members, currentUser, initialVotes
                           className={`w-8 h-7 rounded text-xs font-medium transition ${
                             avail
                               ? AVAIL_STYLES[avail]
-                              : "border border-dashed border-gray-700 text-gray-600 hover:border-indigo-600 hover:text-indigo-400"
+                              : "border border-dashed border-gray-300 dark:border-gray-700 text-gray-500 dark:text-gray-600 hover:border-indigo-600 hover:text-indigo-400"
                           } ${
                             busy === slot.id
                               ? "opacity-50 cursor-wait"
@@ -181,7 +181,7 @@ export default function VotingGrid({ session, members, currentUser, initialVotes
                       ) : (
                         <span
                           className={`inline-flex items-center justify-center w-8 h-7 rounded text-xs font-medium ${
-                            avail ? AVAIL_STYLES[avail] : "text-gray-700"
+                            avail ? AVAIL_STYLES[avail] : "text-gray-400 dark:text-gray-700"
                           }`}
                         >
                           {avail ? AVAIL_LABEL[avail] : "—"}
@@ -206,7 +206,7 @@ export default function VotingGrid({ session, members, currentUser, initialVotes
         </tbody>
       </table>
 
-      <p className="mt-3 text-xs text-gray-600">
+      <p className="mt-3 text-xs text-gray-500 dark:text-gray-600">
         ✓ = Yes (+2) &nbsp;·&nbsp; ~ = Maybe (+1) &nbsp;·&nbsp; ✗ = No
         &nbsp;·&nbsp; * = you &nbsp;·&nbsp; ★ = best slot
       </p>

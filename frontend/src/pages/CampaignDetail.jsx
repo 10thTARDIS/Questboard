@@ -108,7 +108,7 @@ function TabBtn({ active, onClick, children }) {
       className={`px-4 py-2 text-sm font-medium border-b-2 transition ${
         active
           ? "border-indigo-500 text-white"
-          : "border-transparent text-gray-500 hover:text-gray-300"
+          : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
       }`}
     >
       {children}
@@ -504,7 +504,7 @@ export default function CampaignDetail() {
   // ── Loading / error states ─────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-950">
+      <div className="flex h-screen items-center justify-center bg-white dark:bg-gray-950">
         <p className="text-gray-500">Loading…</p>
       </div>
     );
@@ -512,7 +512,7 @@ export default function CampaignDetail() {
 
   if (error || !campaign) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-gray-950 gap-4">
+      <div className="flex h-screen flex-col items-center justify-center bg-white dark:bg-gray-950 gap-4">
         <p className="text-red-400">{error ?? "Campaign not found."}</p>
         <Link to="/dashboard" className="text-sm text-indigo-400 hover:underline">Back to dashboard</Link>
       </div>
@@ -529,13 +529,13 @@ export default function CampaignDetail() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+      <header className="border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/dashboard" className="text-gray-500 hover:text-white transition text-sm">
+          <Link to="/dashboard" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition text-sm">
             ← Campaigns
           </Link>
-          <span className="text-gray-700">/</span>
+          <span className="text-gray-400 dark:text-gray-700">/</span>
           <span className="font-semibold">{campaign.name}</span>
         </div>
         <NavBar />
@@ -554,7 +554,7 @@ export default function CampaignDetail() {
           <div className="space-y-5">
 
             {/* ── Panel 1: Campaign info + invite + members ─────────────────── */}
-            <section className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
+            <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 overflow-hidden">
               {!editing ? (
                 <div className="p-5">
                   {/* Header row */}
@@ -562,10 +562,10 @@ export default function CampaignDetail() {
                     <div className="min-w-0">
                       <h2 className="text-lg font-bold leading-tight">{campaign.name}</h2>
                       {campaign.game_system && (
-                        <p className="text-sm text-gray-400 mt-0.5">{campaign.game_system}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">{campaign.game_system}</p>
                       )}
                       {campaign.description && (
-                        <p className="mt-2 text-sm text-gray-300">{campaign.description}</p>
+                        <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">{campaign.description}</p>
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
@@ -579,7 +579,7 @@ export default function CampaignDetail() {
                         <>
                           <button
                             onClick={() => setEditing(true)}
-                            className="rounded-lg border border-gray-700 px-2.5 py-1 text-xs hover:border-gray-500 transition"
+                            className="rounded-lg border border-gray-300 dark:border-gray-700 px-2.5 py-1 text-xs hover:border-gray-400 dark:hover:border-gray-500 transition"
                           >
                             Edit
                           </button>
@@ -596,28 +596,28 @@ export default function CampaignDetail() {
 
                   {/* Invite code (collapsible) */}
                   {campaign.invite_code && (
-                    <div className="mt-4 border-t border-gray-800 pt-3">
+                    <div className="mt-4 border-t border-gray-200 dark:border-gray-800 pt-3">
                       <button
                         onClick={() => setShowInvite((v) => !v)}
-                        className="text-xs text-gray-500 hover:text-gray-300 transition"
+                        className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition"
                       >
                         {showInvite ? "▲ Hide invite code" : "▼ Show invite code"}
                       </button>
                       {showInvite && (
                         <div className="flex items-center gap-2 mt-2">
-                          <code className="flex-1 rounded bg-gray-800 px-3 py-1.5 font-mono text-xs tracking-widest truncate">
+                          <code className="flex-1 rounded bg-gray-100 dark:bg-gray-800 px-3 py-1.5 font-mono text-xs tracking-widest truncate">
                             {campaign.invite_code}
                           </code>
                           <button
                             onClick={handleCopyCode}
-                            className="rounded border border-gray-700 px-2.5 py-1 text-xs hover:border-gray-500 transition shrink-0"
+                            className="rounded border border-gray-300 dark:border-gray-700 px-2.5 py-1 text-xs hover:border-gray-400 dark:hover:border-gray-500 transition shrink-0"
                           >
                             {copied ? "Copied!" : "Copy"}
                           </button>
                           {isGm && (
                             <button
                               onClick={handleRegenerate}
-                              className="rounded border border-gray-700 px-2.5 py-1 text-xs text-gray-400 hover:border-gray-500 transition shrink-0"
+                              className="rounded border border-gray-300 dark:border-gray-700 px-2.5 py-1 text-xs text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500 transition shrink-0"
                             >
                               Regenerate
                             </button>
@@ -628,9 +628,9 @@ export default function CampaignDetail() {
                   )}
 
                   {/* Members */}
-                  <div className="mt-4 border-t border-gray-800 pt-3">
+                  <div className="mt-4 border-t border-gray-200 dark:border-gray-800 pt-3">
                     <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+                      <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
                         Members ({members.length})
                       </p>
                       {!isGm && (
@@ -644,13 +644,13 @@ export default function CampaignDetail() {
                     </div>
                     <ul className="space-y-1">
                       {members.map((m) => (
-                        <li key={m.user_id} className="rounded-lg px-2 py-1.5 hover:bg-gray-800/50 transition">
+                        <li key={m.user_id} className="rounded-lg px-2 py-1.5 hover:bg-gray-200/50 dark:hover:bg-gray-800/50 transition">
                           <div className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2 min-w-0">
                               {m.avatar_url ? (
                                 <img src={m.avatar_url} alt="" className="h-6 w-6 rounded-full object-cover shrink-0" />
                               ) : (
-                                <div className="h-6 w-6 rounded-full bg-gray-700 flex items-center justify-center text-xs font-medium shrink-0">
+                                <div className="h-6 w-6 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs font-medium shrink-0">
                                   {m.display_name[0]?.toUpperCase()}
                                 </div>
                               )}
@@ -671,13 +671,13 @@ export default function CampaignDetail() {
                                   </a>
                                 )}
                                 {m.user_id === user?.id && (
-                                  <span className="ml-1.5 text-xs text-gray-600">(you)</span>
+                                  <span className="ml-1.5 text-xs text-gray-500 dark:text-gray-600">(you)</span>
                                 )}
                               </div>
                             </div>
                             <div className="flex items-center gap-2 shrink-0">
                               <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                                m.role === "gm" ? "bg-amber-900/50 text-amber-300" : "bg-gray-800 text-gray-400"
+                                m.role === "gm" ? "bg-amber-900/50 text-amber-300" : "bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400"
                               }`}>
                                 {m.role === "gm" ? "GM" : "Player"}
                               </span>
@@ -689,27 +689,27 @@ export default function CampaignDetail() {
                                       placeholder="Character name"
                                       value={charNameInput}
                                       onChange={(e) => setCharNameInput(e.target.value)}
-                                      className="w-full rounded bg-gray-700 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                      className="w-full rounded bg-gray-200 dark:bg-gray-700 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                     />
                                     <input
                                       type="url"
                                       placeholder="Sheet URL (optional)"
                                       value={charSheetUrlInput}
                                       onChange={(e) => setCharSheetUrlInput(e.target.value)}
-                                      className="w-full rounded bg-gray-700 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                      className="w-full rounded bg-gray-200 dark:bg-gray-700 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                     />
                                     <textarea
                                       placeholder="Character notes (optional)"
                                       value={charSheetNotesInput}
                                       onChange={(e) => setCharSheetNotesInput(e.target.value)}
                                       rows={2}
-                                      className="w-full rounded bg-gray-700 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
+                                      className="w-full rounded bg-gray-200 dark:bg-gray-700 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500 resize-none"
                                     />
                                     <div className="flex gap-2">
                                       <button type="submit" disabled={savingCharName} className="text-xs text-indigo-400 hover:text-indigo-300 transition">
                                         {savingCharName ? "Saving…" : "Save"}
                                       </button>
-                                      <button type="button" onClick={() => setEditingCharName(false)} className="text-xs text-gray-500 hover:text-gray-300 transition">
+                                      <button type="button" onClick={() => setEditingCharName(false)} className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition">
                                         Cancel
                                       </button>
                                     </div>
@@ -717,7 +717,7 @@ export default function CampaignDetail() {
                                 ) : (
                                   <button
                                     onClick={() => setEditingCharName(true)}
-                                    className="text-xs text-gray-500 hover:text-indigo-400 transition"
+                                    className="text-xs text-gray-500 dark:text-gray-500 hover:text-indigo-400 transition"
                                   >
                                     {m.character_name ? "Edit character" : "Set character"}
                                   </button>
@@ -726,7 +726,7 @@ export default function CampaignDetail() {
                               {isGm && m.user_id !== user?.id && (
                                 <button
                                   onClick={() => handleRemoveMember(m.user_id, m.display_name)}
-                                  className="text-xs text-gray-600 hover:text-red-400 transition"
+                                  className="text-xs text-gray-500 dark:text-gray-600 hover:text-red-400 transition"
                                 >
                                   Remove
                                 </button>
@@ -747,26 +747,26 @@ export default function CampaignDetail() {
                     placeholder="Campaign name"
                     value={editForm.name}
                     onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                    className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                   <input
                     placeholder="Game system"
                     value={editForm.game_system}
                     onChange={(e) => setEditForm((f) => ({ ...f, game_system: e.target.value }))}
-                    className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                   <textarea
                     placeholder="Description"
                     rows={3}
                     value={editForm.description}
                     onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
-                    className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                    className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                   />
                   <input
                     placeholder="Discord webhook URL (optional)"
                     value={editForm.discord_webhook_url}
                     onChange={(e) => setEditForm((f) => ({ ...f, discord_webhook_url: e.target.value }))}
-                    className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                   <div>
                     <input
@@ -774,7 +774,7 @@ export default function CampaignDetail() {
                       placeholder="Discord Server ID / Guild ID (optional)"
                       value={editForm.guild_id}
                       onChange={(e) => setEditForm((f) => ({ ...f, guild_id: e.target.value || "" }))}
-                      className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                     <p className="mt-1 text-xs text-gray-500">Enable bot notifications. Leave blank to use webhook only.</p>
                   </div>
@@ -783,21 +783,21 @@ export default function CampaignDetail() {
                     placeholder="Bot notification channel ID (optional)"
                     value={editForm.notification_channel_id}
                     onChange={(e) => setEditForm((f) => ({ ...f, notification_channel_id: e.target.value || "" }))}
-                    className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
 
                   {/* Invite code management (inside edit) */}
                   {campaign.invite_code && (
-                    <div className="rounded-lg bg-gray-800/60 border border-gray-700 px-3 py-2">
-                      <p className="text-xs text-gray-400 mb-1.5">Invite code</p>
+                    <div className="rounded-lg bg-gray-200/40 dark:bg-gray-800/60 border border-gray-300 dark:border-gray-700 px-3 py-2">
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mb-1.5">Invite code</p>
                       <div className="flex items-center gap-2">
-                        <code className="flex-1 font-mono text-xs tracking-widest text-gray-300 truncate">
+                        <code className="flex-1 font-mono text-xs tracking-widest text-gray-700 dark:text-gray-300 truncate">
                           {campaign.invite_code}
                         </code>
-                        <button type="button" onClick={handleCopyCode} className="text-xs text-gray-400 hover:text-white transition shrink-0">
+                        <button type="button" onClick={handleCopyCode} className="text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition shrink-0">
                           {copied ? "Copied!" : "Copy"}
                         </button>
-                        <button type="button" onClick={handleRegenerate} className="text-xs text-gray-500 hover:text-red-400 transition shrink-0">
+                        <button type="button" onClick={handleRegenerate} className="text-xs text-gray-500 dark:text-gray-500 hover:text-red-400 transition shrink-0">
                           Regenerate
                         </button>
                       </div>
@@ -805,18 +805,18 @@ export default function CampaignDetail() {
                   )}
 
                   <div>
-                    <label className="text-xs text-gray-400 block mb-1">Campaign timezone</label>
+                    <label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">Campaign timezone</label>
                     <select
                       value={editForm.timezone}
                       onChange={(e) => setEditForm((f) => ({ ...f, timezone: e.target.value }))}
-                      className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="">— Use server default —</option>
                       {COMMON_TIMEZONES.map((tz) => <option key={tz} value={tz}>{tz}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-400 block mb-1">Reminders (up to 3)</label>
+                    <label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">Reminders (up to 3)</label>
                     <div className="space-y-2">
                       {editForm.reminders.map((r, i) => (
                         <div key={i} className="flex items-center gap-2">
@@ -824,17 +824,17 @@ export default function CampaignDetail() {
                             type="number" min="1"
                             value={r.value}
                             onChange={(e) => setEditForm((f) => { const rows = [...f.reminders]; rows[i] = { ...rows[i], value: e.target.value }; return { ...f, reminders: rows }; })}
-                            className="w-20 rounded-lg bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-20 rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           />
                           <select
                             value={r.unit}
                             onChange={(e) => setEditForm((f) => { const rows = [...f.reminders]; rows[i] = { ...rows[i], unit: e.target.value }; return { ...f, reminders: rows }; })}
-                            className="rounded-lg bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           >
                             {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
                           </select>
                           <span className="text-xs text-gray-500">before session</span>
-                          <button type="button" onClick={() => setEditForm((f) => ({ ...f, reminders: f.reminders.filter((_, j) => j !== i) }))} className="text-gray-600 hover:text-red-400 text-sm transition">✕</button>
+                          <button type="button" onClick={() => setEditForm((f) => ({ ...f, reminders: f.reminders.filter((_, j) => j !== i) }))} className="text-gray-500 dark:text-gray-600 hover:text-red-400 text-sm transition">✕</button>
                         </div>
                       ))}
                       {editForm.reminders.length < 3 && (
@@ -845,12 +845,12 @@ export default function CampaignDetail() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-400 block mb-1">Vote notifications</label>
+                    <label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">Vote notifications</label>
                     <div className="flex flex-wrap gap-2">
                       {[{ value: "", label: "Disabled" }, { value: "each_vote", label: "On each vote" }, { value: "all_voted", label: "When all voted" }].map((opt) => (
                         <button key={opt.value} type="button"
                           onClick={() => setEditForm((f) => ({ ...f, vote_notification_mode: opt.value }))}
-                          className={`rounded-lg px-3 py-1.5 text-xs transition ${editForm.vote_notification_mode === opt.value ? "bg-indigo-600 text-white" : "border border-gray-700 text-gray-400 hover:border-gray-500"}`}
+                          className={`rounded-lg px-3 py-1.5 text-xs transition ${editForm.vote_notification_mode === opt.value ? "bg-indigo-600 text-white" : "border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500"}`}
                         >
                           {opt.label}
                         </button>
@@ -858,12 +858,12 @@ export default function CampaignDetail() {
                     </div>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-400 block mb-1">Auto-close voting after (hours, blank = never)</label>
+                    <label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">Auto-close voting after (hours, blank = never)</label>
                     <input
                       type="number" min="1" placeholder="e.g. 72"
                       value={editForm.vote_auto_close_hours}
                       onChange={(e) => setEditForm((f) => ({ ...f, vote_auto_close_hours: e.target.value }))}
-                      className="w-28 rounded-lg bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-28 rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                   <div className="flex items-start gap-3 pt-1">
@@ -871,16 +871,16 @@ export default function CampaignDetail() {
                       id="recap_email_enabled" type="checkbox"
                       checked={editForm.recap_email_enabled}
                       onChange={(e) => setEditForm((f) => ({ ...f, recap_email_enabled: e.target.checked }))}
-                      className="mt-0.5 h-4 w-4 rounded border-gray-600 bg-gray-800 text-indigo-500 focus:ring-indigo-500"
+                      className="mt-0.5 h-4 w-4 rounded border-gray-400 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-indigo-500 focus:ring-indigo-500"
                     />
                     <div>
-                      <label htmlFor="recap_email_enabled" className="text-sm text-gray-300 cursor-pointer">Send post-session recap emails</label>
+                      <label htmlFor="recap_email_enabled" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">Send post-session recap emails</label>
                       <p className="text-xs text-gray-500 mt-0.5">Emails attendees a summary when the bot uploads a transcript (requires user opt-in in profile).</p>
                     </div>
                   </div>
                   {editError && <p className="text-sm text-red-400">{editError}</p>}
                   <div className="flex gap-2 justify-end">
-                    <button type="button" onClick={() => setEditing(false)} className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm hover:border-gray-500 transition">Cancel</button>
+                    <button type="button" onClick={() => setEditing(false)} className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm hover:border-gray-400 dark:hover:border-gray-500 transition">Cancel</button>
                     <button type="submit" disabled={saving} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition">
                       {saving ? "Saving…" : "Save"}
                     </button>
@@ -890,9 +890,9 @@ export default function CampaignDetail() {
             </section>
 
             {/* ── Panel 2: Sessions (tabbed) ─────────────────────────────────── */}
-            <section className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
+            <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 overflow-hidden">
               {/* Tab bar + new session button */}
-              <div className="flex items-center justify-between border-b border-gray-800 px-4">
+              <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 px-4">
                 <div className="flex">
                   <TabBtn active={sessionTab === "upcoming"} onClick={() => setSessionTab("upcoming")}>
                     Upcoming ({upcomingSessions.length})
@@ -919,29 +919,29 @@ export default function CampaignDetail() {
               <div className="p-4 space-y-3">
                 {/* New-session form */}
                 {showNewSession && sessionTab === "upcoming" && (
-                  <form onSubmit={handleCreateSession} className="rounded-xl border border-gray-700 bg-gray-800/50 p-4 space-y-3">
+                  <form onSubmit={handleCreateSession} className="rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-200/40 dark:bg-gray-800/50 p-4 space-y-3">
                     <h4 className="font-medium text-sm">New Session</h4>
                     <input
                       placeholder="Title (optional)"
                       value={sessionForm.title}
                       onChange={(e) => setSessionForm((f) => ({ ...f, title: e.target.value }))}
-                      className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                     <textarea
                       placeholder="Description (optional)"
                       rows={2}
                       value={sessionForm.description}
                       onChange={(e) => setSessionForm((f) => ({ ...f, description: e.target.value }))}
-                      className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                      className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                     />
                     <div>
-                      <label className="text-xs text-gray-400 mb-1.5 block">Scheduling mode</label>
+                      <label className="text-xs text-gray-600 dark:text-gray-400 mb-1.5 block">Scheduling mode</label>
                       <div className="flex flex-wrap gap-2">
                         {[{ value: "vote", label: "Vote (2–5 slots)" }, { value: "direct", label: "Direct" }, { value: "tentative", label: "Tentative" }].map((opt) => (
                           <button
                             key={opt.value} type="button"
                             onClick={() => setSessionForm((f) => ({ ...f, scheduling_mode: opt.value, times: opt.value === "vote" ? ["", ""] : [""] }))}
-                            className={`rounded-lg px-3 py-1.5 text-xs transition ${sessionForm.scheduling_mode === opt.value ? "bg-indigo-600 text-white" : "border border-gray-700 text-gray-400 hover:border-gray-500"}`}
+                            className={`rounded-lg px-3 py-1.5 text-xs transition ${sessionForm.scheduling_mode === opt.value ? "bg-indigo-600 text-white" : "border border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500"}`}
                           >
                             {opt.label}
                           </button>
@@ -949,14 +949,14 @@ export default function CampaignDetail() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs text-gray-400 block">
+                      <label className="text-xs text-gray-600 dark:text-gray-400 block">
                         {sessionForm.scheduling_mode === "vote" ? "Proposed times" : "Session time"}
                       </label>
                       {sessionForm.times.slice(0, sessionTimeCount).map((t, idx) => (
                         <div key={idx} className="flex items-center gap-2 flex-wrap">
                           <DateTimePicker value={t} onChange={(v) => setTime(idx, v)} />
                           {sessionForm.scheduling_mode === "vote" && sessionForm.times.length > 2 && (
-                            <button type="button" onClick={() => removeTimeSlot(idx)} className="text-gray-600 hover:text-red-400 text-xs transition">✕</button>
+                            <button type="button" onClick={() => removeTimeSlot(idx)} className="text-gray-500 dark:text-gray-600 hover:text-red-400 text-xs transition">✕</button>
                           )}
                         </div>
                       ))}
@@ -966,7 +966,7 @@ export default function CampaignDetail() {
                     </div>
                     {sessionError && <p className="text-sm text-red-400">{sessionError}</p>}
                     <div className="flex gap-2 justify-end">
-                      <button type="button" onClick={() => { setShowNewSession(false); setSessionForm({ title: "", description: "", scheduling_mode: "vote", times: ["", ""] }); setSessionError(null); }} className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm hover:border-gray-500 transition">Cancel</button>
+                      <button type="button" onClick={() => { setShowNewSession(false); setSessionForm({ title: "", description: "", scheduling_mode: "vote", times: ["", ""] }); setSessionError(null); }} className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm hover:border-gray-400 dark:hover:border-gray-500 transition">Cancel</button>
                       <button type="submit" disabled={creatingSession} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition">
                         {creatingSession ? "Creating…" : "Create Session"}
                       </button>
@@ -981,7 +981,7 @@ export default function CampaignDetail() {
                     : cancelledSessions;
                   if (list.length === 0 && !showNewSession) {
                     return (
-                      <p className="text-sm text-gray-600 py-4 text-center">
+                      <p className="text-sm text-gray-500 dark:text-gray-600 py-4 text-center">
                         {sessionTab === "upcoming"
                           ? isGm ? "No upcoming sessions. Create one above." : "No upcoming sessions."
                           : sessionTab === "completed" ? "No completed sessions yet."
@@ -995,17 +995,17 @@ export default function CampaignDetail() {
                         <li key={s.id} className="flex items-center gap-2">
                           <Link
                             to={`/sessions/${s.id}`}
-                            className="flex-1 flex items-center justify-between rounded-xl border border-gray-800 bg-gray-900 px-4 py-3 hover:border-gray-700 transition min-w-0"
+                            className="flex-1 flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 px-4 py-3 hover:border-gray-300 dark:hover:border-gray-700 transition min-w-0"
                           >
                             <div className="min-w-0">
                               <p className="font-medium text-sm truncate">{s.title ?? "Untitled Session"}</p>
                               {s.confirmed_time ? (
-                                <p className="text-xs text-gray-400 mt-0.5">{fmt(s.confirmed_time)}</p>
+                                <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">{fmt(s.confirmed_time)}</p>
                               ) : (
                                 <p className="text-xs text-gray-500 mt-0.5">{MODE_LABELS[s.scheduling_mode] ?? s.scheduling_mode}</p>
                               )}
                             </div>
-                            <span className={`ml-3 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[s.status] ?? "bg-gray-800 text-gray-400"}`}>
+                            <span className={`ml-3 shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[s.status] ?? "bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400"}`}>
                               {s.status}
                             </span>
                           </Link>
@@ -1013,7 +1013,7 @@ export default function CampaignDetail() {
                             <button
                               onClick={() => reuseAsNewSession(s)}
                               title="Pre-fill a new session with this session's title and description"
-                              className="shrink-0 rounded-lg border border-gray-700 px-2.5 py-1.5 text-xs text-gray-400 hover:border-indigo-600 hover:text-indigo-400 transition"
+                              className="shrink-0 rounded-lg border border-gray-300 dark:border-gray-700 px-2.5 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:border-indigo-600 hover:text-indigo-400 transition"
                             >
                               Reuse
                             </button>
@@ -1027,8 +1027,8 @@ export default function CampaignDetail() {
             </section>
 
             {/* ── Panel 3: Journal | Wiki (tabbed) ──────────────────────────── */}
-            <section className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
-              <div className="flex items-center justify-between border-b border-gray-800 px-4">
+            <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 overflow-hidden">
+              <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 px-4">
                 <div className="flex">
                   <TabBtn active={contentTab === "journal"} onClick={() => setContentTab("journal")}>
                     Campaign Journal
@@ -1058,27 +1058,27 @@ export default function CampaignDetail() {
                   ) : (
                     <div className="space-y-4">
                       {notes.map((entry) => (
-                        <article key={entry.session_id} className="rounded-xl border border-gray-800 bg-gray-900/50 p-4">
+                        <article key={entry.session_id} className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-100/50 dark:bg-gray-900/50 p-4">
                           <div className="mb-3">
                             <Link to={`/sessions/${entry.session_id}`} className="font-medium text-sm hover:text-indigo-400 transition">
                               {entry.session_title ?? "Untitled Session"}
                             </Link>
                             {entry.confirmed_time && (
-                              <p className="text-xs text-gray-500 mt-0.5">{fmtDate(entry.confirmed_time)}</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">{fmtDate(entry.confirmed_time)}</p>
                             )}
                           </div>
                           {entry.my_notes?.length > 0 && (
                             <div className="mb-3 space-y-2">
-                              <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">My Notes</p>
+                              <p className="text-xs text-gray-500 dark:text-gray-500 font-medium uppercase tracking-wide">My Notes</p>
                               {entry.my_notes.map((note, i) => (
-                                <p key={i} className="text-sm text-gray-300 whitespace-pre-wrap">{note}</p>
+                                <p key={i} className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{note}</p>
                               ))}
                             </div>
                           )}
                           {entry.gm_public_note && (
-                            <div className={entry.my_notes?.length > 0 ? "mt-3 pt-3 border-t border-gray-800" : ""}>
+                            <div className={entry.my_notes?.length > 0 ? "mt-3 pt-3 border-t border-gray-200 dark:border-gray-800" : ""}>
                               <p className="text-xs text-amber-500 font-medium uppercase tracking-wide mb-1">GM Notes</p>
-                              <p className="text-sm text-gray-300 whitespace-pre-wrap">{entry.gm_public_note}</p>
+                              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{entry.gm_public_note}</p>
                             </div>
                           )}
                         </article>
@@ -1092,42 +1092,42 @@ export default function CampaignDetail() {
                   <div className="space-y-4">
                     {/* Create form */}
                     {isGm && showCreateLore && (
-                      <form onSubmit={handleCreateLore} className="rounded-xl border border-indigo-800 bg-gray-800/50 p-4 space-y-3">
+                      <form onSubmit={handleCreateLore} className="rounded-xl border border-indigo-800 bg-gray-200/40 dark:bg-gray-800/50 p-4 space-y-3">
                         <div className="flex gap-3">
                           <div className="flex-1">
-                            <label className="block text-xs text-gray-400 mb-1">Type</label>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Type</label>
                             <select
                               value={loreCreateForm.entry_type}
                               onChange={(e) => setLoreCreateForm((f) => ({ ...f, entry_type: e.target.value }))}
-                              className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
+                              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm"
                             >
                               {LORE_TYPES.map((t) => <option key={t} value={t}>{LORE_TYPE_LABELS[t]}</option>)}
                             </select>
                           </div>
                           <div className="flex-[3]">
-                            <label className="block text-xs text-gray-400 mb-1">Title</label>
+                            <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Title</label>
                             <input
                               required
                               value={loreCreateForm.title}
                               onChange={(e) => setLoreCreateForm((f) => ({ ...f, title: e.target.value }))}
                               placeholder="Entry title"
-                              className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
+                              className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm"
                             />
                           </div>
                         </div>
                         <div>
-                          <label className="block text-xs text-gray-400 mb-1">Body</label>
+                          <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Body</label>
                           <textarea
                             required rows={4}
                             value={loreCreateForm.body}
                             onChange={(e) => setLoreCreateForm((f) => ({ ...f, body: e.target.value }))}
                             placeholder="Describe this entry…"
-                            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm resize-y"
+                            className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm resize-y"
                           />
                         </div>
                         {loreCreateError && <p className="text-xs text-red-400">{loreCreateError}</p>}
                         <div className="flex gap-2 justify-end">
-                          <button type="button" onClick={() => { setShowCreateLore(false); setLoreCreateForm(BLANK_LORE); }} className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm hover:bg-gray-800 transition">Cancel</button>
+                          <button type="button" onClick={() => { setShowCreateLore(false); setLoreCreateForm(BLANK_LORE); }} className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm hover:bg-gray-200 dark:hover:bg-gray-800 transition">Cancel</button>
                           <button type="submit" disabled={creatingLore} className="rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 px-3 py-1.5 text-sm font-medium transition">
                             {creatingLore ? "Creating…" : "Create"}
                           </button>
@@ -1145,7 +1145,7 @@ export default function CampaignDetail() {
                             className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition ${
                               loreTypeFilter === t
                                 ? "border-indigo-600 bg-indigo-600 text-white"
-                                : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
+                                : "border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-900 dark:hover:text-white"
                             }`}
                           >
                             {t === "all" ? `All (${loreEntries.length})` : `${LORE_TYPE_LABELS[t]} (${loreEntries.filter((e) => e.entry_type === t).length})`}
@@ -1164,14 +1164,14 @@ export default function CampaignDetail() {
                     )}
                     <div className="space-y-2">
                       {filteredLore.map((entry) => (
-                        <div key={entry.id} className="rounded-xl border border-gray-800 overflow-hidden">
+                        <div key={entry.id} className="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">
                           {editingLoreId === entry.id ? (
                             <form onSubmit={handleSaveLore} className="p-4 space-y-3">
                               <div className="flex gap-3">
                                 <select
                                   value={loreEditForm.entry_type}
                                   onChange={(e) => setLoreEditForm((f) => ({ ...f, entry_type: e.target.value }))}
-                                  className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
+                                  className="rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm"
                                 >
                                   {LORE_TYPES.map((t) => <option key={t} value={t}>{LORE_TYPE_LABELS[t]}</option>)}
                                 </select>
@@ -1179,18 +1179,18 @@ export default function CampaignDetail() {
                                   required
                                   value={loreEditForm.title}
                                   onChange={(e) => setLoreEditForm((f) => ({ ...f, title: e.target.value }))}
-                                  className="flex-1 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
+                                  className="flex-1 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm"
                                 />
                               </div>
                               <textarea
                                 required rows={4}
                                 value={loreEditForm.body}
                                 onChange={(e) => setLoreEditForm((f) => ({ ...f, body: e.target.value }))}
-                                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm resize-y"
+                                className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm resize-y"
                               />
                               {loreEditError && <p className="text-xs text-red-400">{loreEditError}</p>}
                               <div className="flex gap-2 justify-end">
-                                <button type="button" onClick={() => setEditingLoreId(null)} className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm hover:bg-gray-800 transition">Cancel</button>
+                                <button type="button" onClick={() => setEditingLoreId(null)} className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm hover:bg-gray-200 dark:hover:bg-gray-800 transition">Cancel</button>
                                 <button type="submit" disabled={savingLore} className="rounded-lg bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 px-3 py-1.5 text-sm font-medium transition">
                                   {savingLore ? "Saving…" : "Save"}
                                 </button>
@@ -1200,15 +1200,15 @@ export default function CampaignDetail() {
                             <>
                               <button
                                 onClick={() => toggleLoreExpand(entry.id)}
-                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-800/40 transition"
+                                className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-200/40 dark:hover:bg-gray-800/40 transition"
                               >
                                 <LoreTypeBadge type={entry.entry_type} />
                                 <span className="flex-1 text-sm font-medium">{entry.title}</span>
-                                <span className="text-gray-600 text-xs">{expandedLoreIds.has(entry.id) ? "▲" : "▼"}</span>
+                                <span className="text-gray-500 dark:text-gray-600 text-xs">{expandedLoreIds.has(entry.id) ? "▲" : "▼"}</span>
                               </button>
                               {expandedLoreIds.has(entry.id) && (
-                                <div className="border-t border-gray-800 px-4 pb-4 pt-3">
-                                  <p className="text-sm text-gray-300 whitespace-pre-wrap">{entry.body}</p>
+                                <div className="border-t border-gray-200 dark:border-gray-800 px-4 pb-4 pt-3">
+                                  <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{entry.body}</p>
                                   {isGm && (
                                     <div className="flex gap-3 mt-3">
                                       <button onClick={() => { setEditingLoreId(entry.id); setLoreEditForm({ entry_type: entry.entry_type, title: entry.title, body: entry.body }); }} className="text-xs text-indigo-400 hover:text-indigo-300 transition">Edit</button>
@@ -1233,11 +1233,11 @@ export default function CampaignDetail() {
           {/* ══ RIGHT COLUMN: Milestones timeline ════════════════════════════ */}
           <div className="space-y-3 lg:sticky lg:top-6">
             <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-sm text-gray-300 uppercase tracking-wide">Milestones</h3>
+              <h3 className="font-semibold text-sm text-gray-700 dark:text-gray-300 uppercase tracking-wide">Milestones</h3>
               {isGm && !showNewMilestone && (
                 <button
                   onClick={() => setShowNewMilestone(true)}
-                  className="rounded-lg border border-gray-700 px-3 py-1 text-xs hover:border-gray-500 transition"
+                  className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1 text-xs hover:border-gray-400 dark:hover:border-gray-500 transition"
                 >
                   + Add
                 </button>
@@ -1249,7 +1249,7 @@ export default function CampaignDetail() {
             {showNewMilestone && isGm && (
               <form
                 onSubmit={handleCreateMilestone}
-                className="rounded-xl border border-gray-800 bg-gray-900 p-4 space-y-3"
+                className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-4 space-y-3"
               >
                 <h4 className="font-medium text-sm">New Milestone</h4>
                 <input
@@ -1257,39 +1257,39 @@ export default function CampaignDetail() {
                   placeholder="Title"
                   value={milestoneForm.title}
                   onChange={(e) => setMilestoneForm((f) => ({ ...f, title: e.target.value }))}
-                  className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
                 <textarea
                   placeholder="Description (optional)"
                   rows={2}
                   value={milestoneForm.description}
                   onChange={(e) => setMilestoneForm((f) => ({ ...f, description: e.target.value }))}
-                  className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                  className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                 />
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-xs text-gray-400 block mb-1">Linked session</label>
+                    <label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">Linked session</label>
                     <select
                       value={milestoneForm.session_id}
                       onChange={(e) => setMilestoneForm((f) => ({ ...f, session_id: e.target.value }))}
-                      className="w-full rounded-lg bg-gray-800 px-2 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-2 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="">— None —</option>
                       {sessions.map((s) => <option key={s.id} value={s.id}>{s.title ?? "Untitled Session"}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs text-gray-400 block mb-1">Date</label>
+                    <label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">Date</label>
                     <input
                       type="date"
                       value={milestoneForm.milestone_date}
                       onChange={(e) => setMilestoneForm((f) => ({ ...f, milestone_date: e.target.value }))}
-                      className="w-full rounded-lg bg-gray-800 px-2 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-2 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
                 </div>
                 <div className="flex gap-2 justify-end">
-                  <button type="button" onClick={() => { setShowNewMilestone(false); setMilestoneForm({ title: "", description: "", session_id: "", milestone_date: "" }); }} className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs hover:border-gray-500 transition">Cancel</button>
+                  <button type="button" onClick={() => { setShowNewMilestone(false); setMilestoneForm({ title: "", description: "", session_id: "", milestone_date: "" }); }} className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs hover:border-gray-400 dark:hover:border-gray-500 transition">Cancel</button>
                   <button type="submit" disabled={savingMilestone} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium hover:bg-indigo-500 disabled:opacity-50 transition">
                     {savingMilestone ? "Adding…" : "Add"}
                   </button>
@@ -1298,7 +1298,7 @@ export default function CampaignDetail() {
             )}
 
             {milestones.length === 0 && !showNewMilestone && (
-              <p className="text-sm text-gray-600 text-center py-4">
+              <p className="text-sm text-gray-500 dark:text-gray-600 text-center py-4">
                 {isGm ? "No milestones yet. Add one to track key events." : "No milestones yet."}
               </p>
             )}
@@ -1307,7 +1307,7 @@ export default function CampaignDetail() {
             {milestones.length > 0 && (
               <div className="relative">
                 {/* Vertical connecting line */}
-                <div className="absolute left-3 top-4 bottom-4 w-px bg-gray-800" />
+                <div className="absolute left-3 top-4 bottom-4 w-px bg-gray-200 dark:bg-gray-800" />
 
                 <div className="space-y-0">
                   {milestones.map((m) =>
@@ -1315,26 +1315,26 @@ export default function CampaignDetail() {
                       <form
                         key={m.id}
                         onSubmit={(e) => handleUpdateMilestone(e, m.id)}
-                        className="relative mb-3 ml-9 rounded-xl border border-indigo-900/50 bg-gray-900 p-3 space-y-2"
+                        className="relative mb-3 ml-9 rounded-xl border border-indigo-900/50 bg-gray-50 dark:bg-gray-900 p-3 space-y-2"
                       >
                         <input
                           required
                           value={editMilestoneForm.title}
                           onChange={(e) => setEditMilestoneForm((f) => ({ ...f, title: e.target.value }))}
-                          className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                         <textarea
                           placeholder="Description (optional)"
                           rows={2}
                           value={editMilestoneForm.description ?? ""}
                           onChange={(e) => setEditMilestoneForm((f) => ({ ...f, description: e.target.value }))}
-                          className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                          className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                         />
                         <div className="grid grid-cols-2 gap-2">
                           <select
                             value={editMilestoneForm.session_id ?? ""}
                             onChange={(e) => setEditMilestoneForm((f) => ({ ...f, session_id: e.target.value }))}
-                            className="w-full rounded-lg bg-gray-800 px-2 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-2 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           >
                             <option value="">— No session —</option>
                             {sessions.map((s) => <option key={s.id} value={s.id}>{s.title ?? "Untitled"}</option>)}
@@ -1343,11 +1343,11 @@ export default function CampaignDetail() {
                             type="date"
                             value={editMilestoneForm.milestone_date ?? ""}
                             onChange={(e) => setEditMilestoneForm((f) => ({ ...f, milestone_date: e.target.value }))}
-                            className="w-full rounded-lg bg-gray-800 px-2 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-2 py-2 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                           />
                         </div>
                         <div className="flex gap-2 justify-end">
-                          <button type="button" onClick={() => setEditingMilestone(null)} className="rounded-lg border border-gray-700 px-2.5 py-1 text-xs hover:border-gray-500 transition">Cancel</button>
+                          <button type="button" onClick={() => setEditingMilestone(null)} className="rounded-lg border border-gray-300 dark:border-gray-700 px-2.5 py-1 text-xs hover:border-gray-400 dark:hover:border-gray-500 transition">Cancel</button>
                           <button type="submit" disabled={savingMilestone} className="rounded-lg bg-indigo-600 px-2.5 py-1 text-xs font-medium hover:bg-indigo-500 disabled:opacity-50 transition">
                             {savingMilestone ? "Saving…" : "Save"}
                           </button>
@@ -1356,18 +1356,18 @@ export default function CampaignDetail() {
                     ) : (
                       <div key={m.id} className="relative flex gap-3 pb-5 group">
                         {/* Timeline node */}
-                        <div className="relative z-10 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-gray-700 bg-gray-950 text-xs text-gray-500">
+                        <div className="relative z-10 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-950 text-xs text-gray-500">
                           ◆
                         </div>
                         {/* Content */}
                         <div className="flex-1 min-w-0 pt-0.5">
                           <p className="font-medium text-sm leading-snug">{m.title}</p>
                           {m.description && (
-                            <p className="text-xs text-gray-400 mt-0.5 whitespace-pre-wrap">{m.description}</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 whitespace-pre-wrap">{m.description}</p>
                           )}
                           <div className="flex items-center gap-3 mt-1">
                             {m.milestone_date && (
-                              <span className="text-xs text-gray-600">{fmtDate(m.milestone_date)}</span>
+                              <span className="text-xs text-gray-500 dark:text-gray-600">{fmtDate(m.milestone_date)}</span>
                             )}
                             {m.session_id && (() => {
                               const linkedSession = sessions.find((s) => s.id === m.session_id);

@@ -41,7 +41,7 @@ export default function CampaignNotes() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-950">
+      <div className="flex h-screen items-center justify-center bg-white dark:bg-gray-950">
         <p className="text-gray-500">Loading journal…</p>
       </div>
     );
@@ -49,7 +49,7 @@ export default function CampaignNotes() {
 
   if (error) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-gray-950 gap-4">
+      <div className="flex h-screen flex-col items-center justify-center bg-white dark:bg-gray-950 gap-4">
         <p className="text-red-400">{error}</p>
         <Link to="/dashboard" className="text-sm text-indigo-400 hover:underline">
           Back to dashboard
@@ -59,27 +59,27 @@ export default function CampaignNotes() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+      <header className="border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link to={`/campaigns/${campaignId}`} className="text-gray-500 hover:text-white transition text-sm">
+          <Link to={`/campaigns/${campaignId}`} className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition text-sm">
             ← {campaign?.name ?? "Campaign"}
           </Link>
-          <span className="text-gray-700">/</span>
+          <span className="text-gray-400 dark:text-gray-700">/</span>
           <span className="font-semibold">Campaign Journal</span>
         </div>
         <NavBar />
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-8">
-        <p className="text-sm text-gray-500 mb-6">
+        <p className="text-sm text-gray-500 dark:text-gray-500 mb-6">
           Your session notes, plus any GM notes shared with the group.
         </p>
 
         {notes.length === 0 ? (
-          <div className="rounded-xl border border-gray-800 bg-gray-900 p-8 text-center">
+          <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-8 text-center">
             <p className="text-gray-500 text-sm">No notes written yet.</p>
-            <p className="text-gray-600 text-xs mt-2">
+            <p className="text-gray-500 dark:text-gray-600 text-xs mt-2">
               Write notes on individual sessions to build your journal.
             </p>
           </div>
@@ -88,7 +88,7 @@ export default function CampaignNotes() {
             {notes.map((entry) => (
               <article
                 key={entry.session_id}
-                className="rounded-xl border border-gray-800 bg-gray-900 p-5"
+                className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-5"
               >
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <div>
@@ -99,7 +99,7 @@ export default function CampaignNotes() {
                       {entry.session_title ?? "Untitled Session"}
                     </Link>
                     {entry.confirmed_time && (
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="text-xs text-gray-500 dark:text-gray-500 mt-0.5">
                         {fmtDate(entry.confirmed_time)}
                       </p>
                     )}
@@ -108,21 +108,21 @@ export default function CampaignNotes() {
 
                 {entry.my_notes?.length > 0 && (
                   <div className="mb-3 space-y-3">
-                    <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">
+                    <p className="text-xs text-gray-500 dark:text-gray-500 font-medium uppercase tracking-wide">
                       My Notes
                     </p>
                     {entry.my_notes.map((note, i) => (
-                      <p key={i} className="text-sm text-gray-300 whitespace-pre-wrap">{note}</p>
+                      <p key={i} className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{note}</p>
                     ))}
                   </div>
                 )}
 
                 {entry.gm_public_note && (
-                  <div className={entry.my_notes?.length > 0 ? "mt-4 pt-4 border-t border-gray-800" : ""}>
+                  <div className={entry.my_notes?.length > 0 ? "mt-4 pt-4 border-t border-gray-200 dark:border-gray-800" : ""}>
                     <p className="text-xs text-amber-500 font-medium uppercase tracking-wide mb-1">
                       GM Notes
                     </p>
-                    <p className="text-sm text-gray-300 whitespace-pre-wrap">
+                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                       {entry.gm_public_note}
                     </p>
                   </div>

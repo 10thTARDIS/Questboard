@@ -73,11 +73,11 @@ function RecordingSection({ session }) {
   const [transcriptOpen, setTranscriptOpen] = useState(false);
 
   return (
-    <section className="rounded-xl border border-gray-800 bg-gray-900 p-5 space-y-4">
+    <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-5 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-gray-400">Recording & Transcript</h3>
+        <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Recording & Transcript</h3>
         {session.transcript_updated_at && (
-          <span className="text-xs text-gray-600">
+          <span className="text-xs text-gray-500 dark:text-gray-600">
             Last updated:{" "}
             {new Date(session.transcript_updated_at).toLocaleString(undefined, {
               month: "short", day: "numeric", year: "numeric",
@@ -100,10 +100,10 @@ function RecordingSection({ session }) {
 
       {session.summary && (
         <div>
-          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">
+          <p className="text-xs font-medium text-gray-500 dark:text-gray-500 uppercase tracking-wide mb-2">
             Session Summary
           </p>
-          <p className="text-sm text-gray-300 whitespace-pre-wrap">{session.summary}</p>
+          <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{session.summary}</p>
         </div>
       )}
 
@@ -111,13 +111,13 @@ function RecordingSection({ session }) {
         <div>
           <button
             onClick={() => setTranscriptOpen((o) => !o)}
-            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-300 transition"
+            className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition"
           >
             <span>{transcriptOpen ? "▾" : "▸"}</span>
             {transcriptOpen ? "Hide full transcript" : "Show full transcript"}
           </button>
           {transcriptOpen && (
-            <pre className="mt-3 text-xs text-gray-400 whitespace-pre-wrap font-mono bg-gray-800/60 rounded-lg p-4 overflow-x-auto">
+            <pre className="mt-3 text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap font-mono bg-gray-200/40 dark:bg-gray-800/60 rounded-lg p-4 overflow-x-auto">
               {session.transcript}
             </pre>
           )}
@@ -298,7 +298,7 @@ export default function SessionDetail() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-950">
+      <div className="flex h-screen items-center justify-center bg-white dark:bg-gray-950">
         <p className="text-gray-500">Loading…</p>
       </div>
     );
@@ -306,7 +306,7 @@ export default function SessionDetail() {
 
   if (error || !session) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-gray-950 gap-4">
+      <div className="flex h-screen flex-col items-center justify-center bg-white dark:bg-gray-950 gap-4">
         <p className="text-red-400">{error ?? "Session not found."}</p>
         <Link to="/dashboard" className="text-sm text-indigo-400 hover:underline">
           Back to dashboard
@@ -322,14 +322,14 @@ export default function SessionDetail() {
   const isTentative = session.scheduling_mode === "tentative";
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
       {/* Header */}
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+      <header className="border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link to={`/campaigns/${session.campaign_id}`} className="text-gray-500 hover:text-white transition text-sm">
+          <Link to={`/campaigns/${session.campaign_id}`} className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition text-sm">
             ← Campaign
           </Link>
-          <span className="text-gray-700">/</span>
+          <span className="text-gray-400 dark:text-gray-700">/</span>
           <span className="font-semibold">{session.title ?? "Untitled Session"}</span>
         </div>
         <NavBar />
@@ -343,24 +343,24 @@ export default function SessionDetail() {
         )}
 
         {/* Session header card */}
-        <section className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+        <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-6">
           {editingSession ? (
             <form onSubmit={handleSaveSession} className="space-y-3">
               <input
                 placeholder="Session title (optional)"
                 value={editForm.title}
                 onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
-                className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               <textarea
                 placeholder="Description (optional)"
                 rows={2}
                 value={editForm.description}
                 onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
-                className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
               />
               <div className="flex gap-2 justify-end">
-                <button type="button" onClick={() => setEditingSession(false)} className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm hover:border-gray-500 transition">Cancel</button>
+                <button type="button" onClick={() => setEditingSession(false)} className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm hover:border-gray-400 dark:hover:border-gray-500 transition">Cancel</button>
                 <button type="submit" disabled={savingSession} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition">{savingSession ? "Saving…" : "Save"}</button>
               </div>
             </form>
@@ -370,14 +370,14 @@ export default function SessionDetail() {
                 <div className="flex-1">
                   <h2 className="text-xl font-bold">{session.title ?? "Untitled Session"}</h2>
                   {session.description && (
-                    <p className="mt-2 text-sm text-gray-300">{session.description}</p>
+                    <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">{session.description}</p>
                   )}
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASSES[session.status]}`}>
                     {session.status.charAt(0).toUpperCase() + session.status.slice(1)}
                   </span>
-                  <span className="rounded-full bg-gray-800 px-2.5 py-0.5 text-xs text-gray-400">
+                  <span className="rounded-full bg-gray-200 dark:bg-gray-800 px-2.5 py-0.5 text-xs text-gray-600 dark:text-gray-400">
                     {MODE_LABELS[session.scheduling_mode]}
                   </span>
                 </div>
@@ -400,7 +400,7 @@ export default function SessionDetail() {
                         onChange={setRescheduleTime}
                       />
                       <button type="submit" disabled={savingTime} className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-medium hover:bg-indigo-500 disabled:opacity-50 transition">{savingTime ? "…" : "Reschedule"}</button>
-                      <button type="button" onClick={() => setEditingTime(false)} className="text-xs text-gray-500 hover:text-gray-300 transition">Cancel</button>
+                      <button type="button" onClick={() => setEditingTime(false)} className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition">Cancel</button>
                     </form>
                   ) : (
                     <button onClick={() => setEditingTime(true)} className="text-xs text-indigo-400 hover:text-indigo-300 transition">Reschedule</button>
@@ -413,7 +413,7 @@ export default function SessionDetail() {
                 <div className="mt-4 flex gap-2 flex-wrap">
                   <button
                     onClick={() => setEditingSession(true)}
-                    className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm hover:border-gray-500 transition"
+                    className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm hover:border-gray-400 dark:hover:border-gray-500 transition"
                   >
                     Edit
                   </button>
@@ -440,13 +440,13 @@ export default function SessionDetail() {
         </section>
 
         {/* Time slots */}
-        <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
-          <h3 className="text-sm font-medium text-gray-400 mb-4">
+        <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-5">
+          <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">
             {isVote ? "Proposed Time Slots" : "Scheduled Time"}
           </h3>
 
           {session.time_slots.length === 0 ? (
-            <p className="text-sm text-gray-600">No time slots yet.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-600">No time slots yet.</p>
           ) : (
             <ul className="space-y-2">
               {session.time_slots.map((slot) => {
@@ -462,7 +462,7 @@ export default function SessionDetail() {
                     className={`flex items-center justify-between rounded-lg px-4 py-3 ${
                       isWinner
                         ? "border border-green-800 bg-green-900/20"
-                        : "bg-gray-800/60"
+                        : "bg-gray-200/40 dark:bg-gray-800/60"
                     }`}
                   >
                     <span className="text-sm">{fmt(slot.proposed_time)}</span>
@@ -488,8 +488,8 @@ export default function SessionDetail() {
 
           {/* Voting grid — vote-mode proposed sessions */}
           {isVote && isProposed && members.length > 0 && (
-            <div className="mt-4 border-t border-gray-800 pt-4">
-              <p className="text-xs text-gray-500 mb-3">
+            <div className="mt-4 border-t border-gray-200 dark:border-gray-800 pt-4">
+              <p className="text-xs text-gray-500 dark:text-gray-500 mb-3">
                 Click your cell to vote &mdash; cycles Yes → Maybe → No → (clear)
               </p>
               <VotingGrid
@@ -504,19 +504,19 @@ export default function SessionDetail() {
 
         {/* Calendar downloads — confirmed sessions only */}
         {isConfirmed && session.confirmed_time && (
-          <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
-            <h3 className="text-sm font-medium text-gray-400 mb-3">Add to Calendar</h3>
+          <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-5">
+            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Add to Calendar</h3>
             <div className="flex flex-wrap gap-3">
               <a
                 href={`/api/sessions/${id}/calendar.ics`}
                 download
-                className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:border-gray-500 hover:text-white transition"
+                className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-900 dark:hover:text-white transition"
               >
                 Download .ics
               </a>
               <a
                 href={`webcal://${window.location.host}/api/sessions/${id}/calendar.ics`}
-                className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:border-gray-500 hover:text-white transition"
+                className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-900 dark:hover:text-white transition"
               >
                 Apple Calendar
               </a>
@@ -524,7 +524,7 @@ export default function SessionDetail() {
                 href={googleCalendarUrl(session)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs text-gray-300 hover:border-gray-500 hover:text-white transition"
+                className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-900 dark:hover:text-white transition"
               >
                 Google Calendar
               </a>
@@ -533,9 +533,9 @@ export default function SessionDetail() {
         )}
 
         {/* Session notes */}
-        <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
+        <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-gray-400">Session Notes</h3>
+            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">Session Notes</h3>
             {isGm && !editingNotes && (
               <button
                 onClick={() => setEditingNotes(true)}
@@ -553,13 +553,13 @@ export default function SessionDetail() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Post-session notes, recap, highlights…"
-                className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
               />
               <div className="flex gap-2 justify-end">
                 <button
                   type="button"
                   onClick={() => setEditingNotes(false)}
-                  className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs hover:border-gray-500 transition"
+                  className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs hover:border-gray-400 dark:hover:border-gray-500 transition"
                 >
                   Cancel
                 </button>
@@ -573,9 +573,9 @@ export default function SessionDetail() {
               </div>
             </form>
           ) : session.session_notes ? (
-            <p className="text-sm text-gray-300 whitespace-pre-wrap">{session.session_notes}</p>
+            <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{session.session_notes}</p>
           ) : (
-            <p className="text-sm text-gray-600">No notes yet.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-600">No notes yet.</p>
           )}
         </section>
 
@@ -583,10 +583,10 @@ export default function SessionDetail() {
         {(() => {
           const privateNote = myNotes.find((n) => n.visibility === "private");
           return (
-            <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
+            <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-5">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-gray-400">My Notes
-                  <span className="ml-2 text-xs rounded-full bg-gray-800 text-gray-500 px-2 py-0.5">Private</span>
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">My Notes
+                  <span className="ml-2 text-xs rounded-full bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-500 px-2 py-0.5">Private</span>
                 </h3>
                 {!editingPrivate && (
                   <button
@@ -608,13 +608,13 @@ export default function SessionDetail() {
                     value={privateInput}
                     onChange={(e) => setPrivateInput(e.target.value)}
                     placeholder="Your private notes for this session…"
-                    className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                    className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                   />
                   <div className="flex gap-2 justify-end">
                     <button
                       type="button"
                       onClick={() => { setEditingPrivate(false); setPrivateInput(privateNote?.content ?? ""); }}
-                      className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs hover:border-gray-500 transition"
+                      className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs hover:border-gray-400 dark:hover:border-gray-500 transition"
                     >
                       Cancel
                     </button>
@@ -628,9 +628,9 @@ export default function SessionDetail() {
                   </div>
                 </form>
               ) : privateNote?.content ? (
-                <p className="text-sm text-gray-300 whitespace-pre-wrap">{privateNote.content}</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{privateNote.content}</p>
               ) : (
-                <p className="text-sm text-gray-600">No private notes yet.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-600">No private notes yet.</p>
               )}
             </section>
           );
@@ -640,9 +640,9 @@ export default function SessionDetail() {
         {isGm && (() => {
           const publicNote = myNotes.find((n) => n.visibility === "public");
           return (
-            <section className="rounded-xl border border-amber-900/40 bg-gray-900 p-5">
+            <section className="rounded-xl border border-amber-900/40 bg-gray-50 dark:bg-gray-900 p-5">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-gray-400">GM Notes
+                <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400">GM Notes
                   <span className="ml-2 text-xs rounded-full bg-amber-900/50 text-amber-300 px-2 py-0.5">Public — shared with players</span>
                 </h3>
                 {!editingPublic && (
@@ -665,13 +665,13 @@ export default function SessionDetail() {
                     value={publicInput}
                     onChange={(e) => setPublicInput(e.target.value)}
                     placeholder="Notes to share with all players in the campaign journal…"
-                    className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+                    className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
                   />
                   <div className="flex gap-2 justify-end">
                     <button
                       type="button"
                       onClick={() => { setEditingPublic(false); setPublicInput(publicNote?.content ?? ""); }}
-                      className="rounded-lg border border-gray-700 px-3 py-1.5 text-xs hover:border-gray-500 transition"
+                      className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-xs hover:border-gray-400 dark:hover:border-gray-500 transition"
                     >
                       Cancel
                     </button>
@@ -685,9 +685,9 @@ export default function SessionDetail() {
                   </div>
                 </form>
               ) : publicNote?.content ? (
-                <p className="text-sm text-gray-300 whitespace-pre-wrap">{publicNote.content}</p>
+                <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{publicNote.content}</p>
               ) : (
-                <p className="text-sm text-gray-600">No public notes yet.</p>
+                <p className="text-sm text-gray-500 dark:text-gray-600">No public notes yet.</p>
               )}
             </section>
           );
@@ -695,22 +695,22 @@ export default function SessionDetail() {
 
         {/* Attendance — completed sessions, GM view */}
         {session.status === "completed" && isGm && (
-          <section className="rounded-xl border border-gray-800 bg-gray-900 p-5">
-            <h3 className="text-sm font-medium text-gray-400 mb-4">Attendance</h3>
+          <section className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-5">
+            <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-4">Attendance</h3>
             {attendance.length === 0 ? (
-              <p className="text-sm text-gray-600">No members found.</p>
+              <p className="text-sm text-gray-500 dark:text-gray-600">No members found.</p>
             ) : (
               <ul className="space-y-2">
                 {attendance.map((a) => (
                   <li key={a.user_id} className="flex items-center justify-between">
-                    <span className="text-sm text-gray-300">{a.display_name}</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">{a.display_name}</span>
                     <button
                       onClick={() => handleToggleAttendance(a.user_id, a.attended)}
                       disabled={attendanceBusy === a.user_id}
                       className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition ${
                         a.attended
                           ? "bg-green-900/50 text-green-300 hover:bg-green-900"
-                          : "bg-gray-800 text-gray-500 hover:bg-gray-700 hover:text-gray-300"
+                          : "bg-gray-200 dark:bg-gray-800 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300"
                       } disabled:opacity-50`}
                     >
                       {attendanceBusy === a.user_id ? "…" : a.attended ? "✓ Attended" : "Absent"}

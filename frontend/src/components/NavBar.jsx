@@ -16,24 +16,24 @@ export default function NavBar() {
   return (
     <div className="flex items-center gap-3 shrink-0">
       {displayName && (
-        <span className="text-sm text-gray-400 truncate max-w-[140px]">{displayName}</span>
+        <span className="text-sm text-gray-600 dark:text-gray-400 truncate max-w-[140px]">{displayName}</span>
       )}
-      <Link to="/profile" className="text-sm text-gray-500 hover:text-white transition">
+      <Link to="/profile" className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition">
         Profile
       </Link>
       {user?.is_admin && (
-        <Link to="/admin" className="text-sm text-gray-500 hover:text-white transition">
+        <Link to="/admin" className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition">
           Admin
         </Link>
       )}
       <button
         onClick={toggle}
         title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-        className="text-sm text-gray-500 hover:text-white transition"
+        className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition"
       >
         {theme === "dark" ? "☀" : "☾"}
       </button>
-      <a href="/auth/logout" className="text-sm text-gray-500 hover:text-white transition">
+      <a href="/auth/logout" className="text-sm text-gray-500 hover:text-gray-900 dark:hover:text-white transition">
         Sign out
       </a>
     </div>

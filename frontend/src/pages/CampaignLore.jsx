@@ -181,7 +181,7 @@ export default function CampaignLore() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white flex items-center justify-center">
         <p className="text-gray-500">Loading wiki…</p>
       </div>
     );
@@ -189,23 +189,23 @@ export default function CampaignLore() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white flex items-center justify-center">
         <p className="text-red-400">{error}</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+      <header className="border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
             to={`/campaigns/${campaignId}`}
-            className="text-gray-500 hover:text-white transition text-sm"
+            className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition text-sm"
           >
             ← {campaign?.name ?? "Campaign"}
           </Link>
-          <span className="text-gray-700">/</span>
+          <span className="text-gray-400 dark:text-gray-700">/</span>
           <span className="font-semibold">Wiki</span>
         </div>
         <div className="flex items-center gap-3">
@@ -225,16 +225,16 @@ export default function CampaignLore() {
 
         {/* Create form */}
         {isGm && showCreate && (
-          <div className="rounded-xl border border-indigo-800 bg-gray-900 p-5">
+          <div className="rounded-xl border border-indigo-800 bg-gray-50 dark:bg-gray-900 p-5">
             <h2 className="font-semibold mb-4">New lore entry</h2>
             <form onSubmit={handleCreate} className="space-y-3">
               <div className="flex gap-3">
                 <div className="flex-1">
-                  <label className="block text-xs text-gray-400 mb-1">Type</label>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Type</label>
                   <select
                     value={createForm.entry_type}
                     onChange={(e) => setCreateForm((f) => ({ ...f, entry_type: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm"
                   >
                     {LORE_TYPES.map((t) => (
                       <option key={t} value={t}>{TYPE_LABELS[t]}</option>
@@ -242,25 +242,25 @@ export default function CampaignLore() {
                   </select>
                 </div>
                 <div className="flex-[3]">
-                  <label className="block text-xs text-gray-400 mb-1">Title</label>
+                  <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Title</label>
                   <input
                     type="text"
                     required
                     value={createForm.title}
                     onChange={(e) => setCreateForm((f) => ({ ...f, title: e.target.value }))}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
+                    className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm"
                     placeholder="Entry title"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-400 mb-1">Body</label>
+                <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Body</label>
                 <textarea
                   required
                   rows={5}
                   value={createForm.body}
                   onChange={(e) => setCreateForm((f) => ({ ...f, body: e.target.value }))}
-                  className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm resize-y"
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm resize-y"
                   placeholder="Describe this entry…"
                 />
               </div>
@@ -269,7 +269,7 @@ export default function CampaignLore() {
                 <button
                   type="button"
                   onClick={() => { setShowCreate(false); setCreateForm(BLANK_FORM); }}
-                  className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm hover:bg-gray-800 transition"
+                  className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm hover:bg-gray-200 dark:hover:bg-gray-800 transition"
                 >
                   Cancel
                 </button>
@@ -294,12 +294,12 @@ export default function CampaignLore() {
               className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
                 activeType === t
                   ? "border-indigo-600 bg-indigo-600 text-white"
-                  : "border-gray-700 text-gray-400 hover:border-gray-500 hover:text-white"
+                  : "border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500 hover:text-gray-900 dark:hover:text-white"
               }`}
             >
               {t === "all" ? "All" : TYPE_LABELS[t]}
               {t !== "all" && (
-                <span className="ml-1 text-gray-500">
+                <span className="ml-1 text-gray-500 dark:text-gray-500">
                   ({entries.filter((e) => e.entry_type === t).length})
                 </span>
               )}
@@ -321,18 +321,18 @@ export default function CampaignLore() {
             {filtered.map((entry) => (
               <div
                 key={entry.id}
-                className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden"
+                className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 overflow-hidden"
               >
                 {editingId === entry.id ? (
                   /* ── Edit form ── */
                   <form onSubmit={handleSave} className="p-5 space-y-3">
                     <div className="flex gap-3">
                       <div className="flex-1">
-                        <label className="block text-xs text-gray-400 mb-1">Type</label>
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Type</label>
                         <select
                           value={editForm.entry_type}
                           onChange={(e) => setEditForm((f) => ({ ...f, entry_type: e.target.value }))}
-                          className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
+                          className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm"
                         >
                           {LORE_TYPES.map((t) => (
                             <option key={t} value={t}>{TYPE_LABELS[t]}</option>
@@ -340,24 +340,24 @@ export default function CampaignLore() {
                         </select>
                       </div>
                       <div className="flex-[3]">
-                        <label className="block text-xs text-gray-400 mb-1">Title</label>
+                        <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Title</label>
                         <input
                           type="text"
                           required
                           value={editForm.title}
                           onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
-                          className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm"
+                          className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm"
                         />
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs text-gray-400 mb-1">Body</label>
+                      <label className="block text-xs text-gray-600 dark:text-gray-400 mb-1">Body</label>
                       <textarea
                         required
                         rows={5}
                         value={editForm.body}
                         onChange={(e) => setEditForm((f) => ({ ...f, body: e.target.value }))}
-                        className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm resize-y"
+                        className="w-full rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm resize-y"
                       />
                     </div>
                     {editError && <p className="text-xs text-red-400">{editError}</p>}
@@ -365,7 +365,7 @@ export default function CampaignLore() {
                       <button
                         type="button"
                         onClick={() => setEditingId(null)}
-                        className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm hover:bg-gray-800 transition"
+                        className="rounded-lg border border-gray-300 dark:border-gray-700 px-3 py-1.5 text-sm hover:bg-gray-200 dark:hover:bg-gray-800 transition"
                       >
                         Cancel
                       </button>
@@ -383,18 +383,18 @@ export default function CampaignLore() {
                   <>
                     <button
                       onClick={() => toggleExpand(entry.id)}
-                      className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-gray-800/40 transition"
+                      className="w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-gray-200/40 dark:hover:bg-gray-800/40 transition"
                     >
                       <TypeBadge type={entry.entry_type} />
                       <span className="flex-1 font-medium">{entry.title}</span>
-                      <span className="text-gray-600 text-sm">
+                      <span className="text-gray-500 dark:text-gray-600 text-sm">
                         {expandedIds.has(entry.id) ? "▲" : "▼"}
                       </span>
                     </button>
 
                     {expandedIds.has(entry.id) && (
-                      <div className="border-t border-gray-800 px-5 pb-5 pt-4">
-                        <p className="text-sm text-gray-300 whitespace-pre-wrap">{entry.body}</p>
+                      <div className="border-t border-gray-200 dark:border-gray-800 px-5 pb-5 pt-4">
+                        <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{entry.body}</p>
                         {isGm && (
                           <div className="flex gap-3 mt-4">
                             <button

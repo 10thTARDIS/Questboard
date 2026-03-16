@@ -52,7 +52,7 @@ function UserDetailPanel({ userId }) {
   return (
     <table className="w-full text-xs mt-2">
       <thead>
-        <tr className="text-left text-gray-500 border-b border-gray-700">
+        <tr className="text-left text-gray-500 border-b border-gray-300 dark:border-gray-700">
           <th className="py-1 pr-4 font-medium">Campaign</th>
           <th className="py-1 pr-4 font-medium">Role</th>
           <th className="py-1 pr-4 font-medium">Joined</th>
@@ -61,11 +61,11 @@ function UserDetailPanel({ userId }) {
       </thead>
       <tbody>
         {detail.campaigns.map((c) => (
-          <tr key={c.campaign_id} className="border-b border-gray-800/50">
-            <td className="py-1.5 pr-4 text-gray-300">{c.campaign_name}</td>
-            <td className="py-1.5 pr-4 text-gray-400 capitalize">{c.role}</td>
+          <tr key={c.campaign_id} className="border-b border-gray-200/50 dark:border-gray-800/50">
+            <td className="py-1.5 pr-4 text-gray-700 dark:text-gray-300">{c.campaign_name}</td>
+            <td className="py-1.5 pr-4 text-gray-600 dark:text-gray-400 capitalize">{c.role}</td>
             <td className="py-1.5 pr-4 text-gray-500">{fmt(c.joined_at)}</td>
-            <td className="py-1.5 text-gray-400">
+            <td className="py-1.5 text-gray-600 dark:text-gray-400">
               {c.attended_count}/{c.session_count}
             </td>
           </tr>
@@ -158,7 +158,7 @@ function NotificationSettings() {
 
       {/* Discord webhook */}
       <div>
-        <label className="block text-xs font-medium text-gray-400 mb-1.5">
+        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1.5">
           Global Discord Webhook URL (fallback for campaigns without a webhook set)
         </label>
         <input
@@ -166,13 +166,13 @@ function NotificationSettings() {
           value={webhookUrl}
           onChange={(e) => setWebhookUrl(e.target.value)}
           placeholder="https://discord.com/api/webhooks/…"
-          className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
 
       {/* SMTP */}
       <div className="space-y-3">
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+        <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
           SMTP (Email Notifications)
           {settings?.smtp?.configured && (
             <span className="ml-2 rounded-full bg-green-900/50 text-green-400 px-2 py-0.5 normal-case font-normal">
@@ -183,54 +183,54 @@ function NotificationSettings() {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Host</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Host</label>
             <input
               type="text"
               value={smtpForm.host}
               onChange={(e) => setSmtpForm((f) => ({ ...f, host: e.target.value }))}
               placeholder="smtp.example.com"
-              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Port</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Port</label>
             <input
               type="number"
               value={smtpForm.port}
               onChange={(e) => setSmtpForm((f) => ({ ...f, port: parseInt(e.target.value) || 587 }))}
-              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Username</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Username</label>
             <input
               type="text"
               value={smtpForm.username}
               onChange={(e) => setSmtpForm((f) => ({ ...f, username: e.target.value }))}
               autoComplete="off"
-              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">
-              Password {settings?.smtp?.configured && <span className="text-gray-600">(leave blank to keep current)</span>}
+            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">
+              Password {settings?.smtp?.configured && <span className="text-gray-500 dark:text-gray-600">(leave blank to keep current)</span>}
             </label>
             <input
               type="password"
               value={smtpForm.password}
               onChange={(e) => setSmtpForm((f) => ({ ...f, password: e.target.value }))}
               autoComplete="new-password"
-              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div className="col-span-2">
-            <label className="block text-xs text-gray-500 mb-1">From Address</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">From Address</label>
             <input
               type="email"
               value={smtpForm.from_address}
               onChange={(e) => setSmtpForm((f) => ({ ...f, from_address: e.target.value }))}
               placeholder="questboard@example.com"
-              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
         </div>
@@ -242,7 +242,7 @@ function NotificationSettings() {
             onChange={(e) => setSmtpForm((f) => ({ ...f, use_tls: e.target.checked }))}
             className="accent-indigo-500"
           />
-          <span className="text-xs text-gray-400">Use STARTTLS</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400">Use STARTTLS</span>
         </label>
 
         {settings?.smtp?.configured && (
@@ -357,7 +357,7 @@ function BotSettings() {
 
       {/* Bot API key */}
       <div>
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+        <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">
           Bot API Key
           {settings?.api_key_configured && (
             <span className="ml-2 rounded-full bg-green-900/50 text-green-400 px-2 py-0.5 normal-case font-normal">
@@ -365,7 +365,7 @@ function BotSettings() {
             </span>
           )}
         </p>
-        <p className="text-xs text-gray-500 mb-3">
+        <p className="text-xs text-gray-500 dark:text-gray-500 mb-3">
           The Discord bot uses this key in every request it makes to Questboard (X-Bot-Key header).
           The key is only shown once when generated.
         </p>
@@ -379,7 +379,7 @@ function BotSettings() {
           type="button"
           onClick={handleRegenerate}
           disabled={regenerating}
-          className="rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-600 disabled:opacity-50 transition"
+          className="rounded-lg bg-gray-200 dark:bg-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 transition"
         >
           {regenerating ? "Generating…" : settings?.api_key_configured ? "Regenerate Key" : "Generate Key"}
         </button>
@@ -387,7 +387,7 @@ function BotSettings() {
 
       {/* Discord bot token */}
       <div>
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2">
+        <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">
           Discord Bot Token
           {settings?.bot_token_configured && (
             <span className="ml-2 rounded-full bg-green-900/50 text-green-400 px-2 py-0.5 normal-case font-normal">
@@ -401,13 +401,13 @@ function BotSettings() {
           onChange={(e) => setForm((f) => ({ ...f, bot_token: e.target.value }))}
           placeholder={settings?.bot_token_configured ? "Leave blank to keep current" : "Discord bot token"}
           autoComplete="new-password"
-          className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
 
       {/* Whisper */}
       <div className="space-y-3">
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+        <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
           Whisper (Transcription)
           {settings?.whisper_configured && (
             <span className="ml-2 rounded-full bg-green-900/50 text-green-400 px-2 py-0.5 normal-case font-normal">
@@ -417,25 +417,25 @@ function BotSettings() {
         </p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Endpoint URL</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Endpoint URL</label>
             <input
               type="url"
               value={form.whisper_endpoint_url}
               onChange={(e) => setForm((f) => ({ ...f, whisper_endpoint_url: e.target.value }))}
               placeholder="https://whisper.example.com"
-              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">
-              API Key {settings?.whisper_configured && <span className="text-gray-600">(leave blank to keep)</span>}
+            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">
+              API Key {settings?.whisper_configured && <span className="text-gray-500 dark:text-gray-600">(leave blank to keep)</span>}
             </label>
             <input
               type="password"
               value={form.whisper_api_key}
               onChange={(e) => setForm((f) => ({ ...f, whisper_api_key: e.target.value }))}
               autoComplete="new-password"
-              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
         </div>
@@ -443,7 +443,7 @@ function BotSettings() {
 
       {/* LLM */}
       <div className="space-y-3">
-        <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">
+        <p className="text-xs font-medium text-gray-600 dark:text-gray-400 uppercase tracking-wide">
           LLM (Summarisation)
           {settings?.llm_configured && (
             <span className="ml-2 rounded-full bg-green-900/50 text-green-400 px-2 py-0.5 normal-case font-normal">
@@ -453,35 +453,35 @@ function BotSettings() {
         </p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-gray-500 mb-1">Endpoint URL</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Endpoint URL</label>
             <input
               type="url"
               value={form.llm_endpoint_url}
               onChange={(e) => setForm((f) => ({ ...f, llm_endpoint_url: e.target.value }))}
               placeholder="https://api.openai.com/v1"
-              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-500 mb-1">
-              API Key {settings?.llm_configured && <span className="text-gray-600">(leave blank to keep)</span>}
+            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">
+              API Key {settings?.llm_configured && <span className="text-gray-500 dark:text-gray-600">(leave blank to keep)</span>}
             </label>
             <input
               type="password"
               value={form.llm_api_key}
               onChange={(e) => setForm((f) => ({ ...f, llm_api_key: e.target.value }))}
               autoComplete="new-password"
-              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           <div className="col-span-2">
-            <label className="block text-xs text-gray-500 mb-1">Model</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-500 mb-1">Model</label>
             <input
               type="text"
               value={form.llm_model}
               onChange={(e) => setForm((f) => ({ ...f, llm_model: e.target.value }))}
               placeholder="gpt-4o"
-              className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 dark:placeholder-gray-600 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
         </div>
@@ -544,13 +544,13 @@ export default function Admin() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+      <header className="border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/dashboard" className="text-gray-500 hover:text-white transition text-sm">
+          <Link to="/dashboard" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition text-sm">
             ← Dashboard
           </Link>
-          <span className="text-gray-700">/</span>
+          <span className="text-gray-400 dark:text-gray-700">/</span>
           <span className="font-semibold">Admin</span>
         </div>
         <NavBar />
@@ -558,15 +558,15 @@ export default function Admin() {
 
       <main className="mx-auto max-w-4xl px-6 py-8">
         {/* Tabs */}
-        <div className="flex gap-1 mb-6 border-b border-gray-800">
+        <div className="flex gap-1 mb-6 border-b border-gray-200 dark:border-gray-800">
           {[["users", "Users"], ["settings", "Notification Settings"], ["bot", "Bot Settings"]].map(([key, label]) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
               className={`px-4 py-2 text-sm font-medium transition border-b-2 -mb-px ${
                 activeTab === key
-                  ? "border-indigo-500 text-white"
-                  : "border-transparent text-gray-500 hover:text-gray-300"
+                  ? "border-indigo-500 text-gray-900 dark:text-white"
+                  : "border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
               }`}
             >
               {label}
@@ -587,10 +587,10 @@ export default function Admin() {
             {error && <p className="text-red-400 text-sm">{error}</p>}
 
             {!loading && !error && (
-              <div className="rounded-xl border border-gray-800 bg-gray-900 overflow-hidden">
+              <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 overflow-hidden">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="border-b border-gray-800 text-left text-gray-400 text-xs">
+                    <tr className="border-b border-gray-200 dark:border-gray-800 text-left text-gray-600 dark:text-gray-400 text-xs">
                       <th className="px-4 py-3 font-medium">Name</th>
                       <th className="px-4 py-3 font-medium">Email</th>
                       <th className="px-4 py-3 font-medium">Last login</th>
@@ -604,12 +604,12 @@ export default function Admin() {
                       <>
                         <tr
                           key={u.id}
-                          className="border-b border-gray-800/50 hover:bg-gray-800/30 cursor-pointer"
+                          className="border-b border-gray-200/50 dark:border-gray-800/50 hover:bg-gray-200/30 dark:hover:bg-gray-800/30 cursor-pointer"
                           onClick={() => toggleExpand(u.id)}
                         >
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <span className="text-gray-500 text-xs select-none">
+                              <span className="text-gray-500 dark:text-gray-500 text-xs select-none">
                                 {expandedUser === u.id ? "▾" : "▸"}
                               </span>
                               <div>
@@ -620,14 +620,14 @@ export default function Admin() {
                               </div>
                             </div>
                           </td>
-                          <td className="px-4 py-3 text-gray-400">{u.email ?? "—"}</td>
-                          <td className="px-4 py-3 text-gray-400">{fmt(u.last_login_at)}</td>
-                          <td className="px-4 py-3 text-gray-400">{fmt(u.created_at)}</td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{u.email ?? "—"}</td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{fmt(u.last_login_at)}</td>
+                          <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{fmt(u.created_at)}</td>
                           <td className="px-4 py-3">
                             {u.is_admin ? (
                               <span className="rounded-full bg-amber-900/50 text-amber-300 px-2 py-0.5 text-xs font-medium">Admin</span>
                             ) : (
-                              <span className="rounded-full bg-gray-800 text-gray-400 px-2 py-0.5 text-xs font-medium">User</span>
+                              <span className="rounded-full bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-0.5 text-xs font-medium">User</span>
                             )}
                           </td>
                           <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
@@ -646,7 +646,7 @@ export default function Admin() {
                           </td>
                         </tr>
                         {expandedUser === u.id && (
-                          <tr key={`${u.id}-detail`} className="bg-gray-900/50 border-b border-gray-800/50">
+                          <tr key={`${u.id}-detail`} className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-200/50 dark:border-gray-800/50">
                             <td colSpan={6} className="px-8 py-3">
                               <UserDetailPanel userId={u.id} />
                             </td>
@@ -663,14 +663,14 @@ export default function Admin() {
 
         {/* Notification settings tab */}
         {activeTab === "settings" && (
-          <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+          <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-6">
             <NotificationSettings />
           </div>
         )}
 
         {/* Bot settings tab */}
         {activeTab === "bot" && (
-          <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+          <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-6">
             <BotSettings />
           </div>
         )}

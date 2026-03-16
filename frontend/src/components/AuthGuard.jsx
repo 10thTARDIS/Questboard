@@ -12,7 +12,7 @@ export default function AuthGuard({ children }) {
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <p className="text-gray-400">Loading…</p>
+        <p className="text-gray-600 dark:text-gray-400">Loading…</p>
       </div>
     );
   }

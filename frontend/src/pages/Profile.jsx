@@ -133,11 +133,11 @@ export default function Profile() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <header className="border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-white">
+      <header className="border-b border-gray-200 dark:border-gray-800 px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Link to="/dashboard" className="text-gray-500 hover:text-white transition text-sm">← Dashboard</Link>
-          <span className="text-gray-700">/</span>
+          <Link to="/dashboard" className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition text-sm">← Dashboard</Link>
+          <span className="text-gray-400 dark:text-gray-700">/</span>
           <span className="font-semibold">Profile</span>
         </div>
         <NavBar />
@@ -145,15 +145,15 @@ export default function Profile() {
 
       <main className="mx-auto max-w-lg px-6 py-8 space-y-6">
         {/* Profile settings */}
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-6">
           <h2 className="text-lg font-bold mb-1">Your Profile</h2>
-          <p className="text-sm text-gray-400 mb-6">
-            OIDC display name: <span className="text-gray-300">{user?.display_name}</span>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+            OIDC display name: <span className="text-gray-700 dark:text-gray-300">{user?.display_name}</span>
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-xs text-gray-400 block mb-1">
+              <label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">
                 Display name override
               </label>
               <input
@@ -163,7 +163,7 @@ export default function Profile() {
                 onChange={(e) =>
                   setForm((f) => ({ ...f, display_name_override: e.target.value }))
                 }
-                className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               <p className="mt-1 text-xs text-gray-500">
                 Leave blank to use your OIDC display name.
@@ -171,13 +171,13 @@ export default function Profile() {
             </div>
 
             <div>
-              <label className="text-xs text-gray-400 block mb-1">Timezone</label>
+              <label className="text-xs text-gray-600 dark:text-gray-400 block mb-1">Timezone</label>
               <select
                 value={form.timezone}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, timezone: e.target.value }))
                 }
-                className="w-full rounded-lg bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="w-full rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="">— Use browser default —</option>
                 {COMMON_TIMEZONES.map((tz) => (
@@ -192,10 +192,10 @@ export default function Profile() {
                 type="checkbox"
                 checked={form.recap_email_opt_in}
                 onChange={(e) => setForm((f) => ({ ...f, recap_email_opt_in: e.target.checked }))}
-                className="mt-0.5 h-4 w-4 rounded border-gray-600 bg-gray-800 text-indigo-500 focus:ring-indigo-500"
+                className="mt-0.5 h-4 w-4 rounded border-gray-400 dark:border-gray-600 bg-gray-100 dark:bg-gray-800 text-indigo-500 focus:ring-indigo-500"
               />
               <div>
-                <label htmlFor="recap_email_opt_in" className="text-sm text-gray-300 cursor-pointer">
+                <label htmlFor="recap_email_opt_in" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
                   Receive post-session recap emails
                 </label>
                 <p className="text-xs text-gray-500 mt-0.5">
@@ -221,9 +221,9 @@ export default function Profile() {
         </div>
 
         {/* Connected accounts */}
-        <div className="rounded-xl border border-gray-800 bg-gray-900 p-6">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-6">
           <h2 className="text-lg font-bold mb-1">Connected Accounts</h2>
-          <p className="text-sm text-gray-400 mb-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
             Link your platform accounts so the Discord bot can identify you.
           </p>
           {linkSuccess && (
@@ -240,13 +240,13 @@ export default function Profile() {
               {links.map((link) => (
                 <div
                   key={link.platform}
-                  className="flex items-center justify-between rounded-lg bg-gray-800 px-3 py-2"
+                  className="flex items-center justify-between rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2"
                 >
                   <div>
                     <span className="text-sm font-medium">
                       {PLATFORM_LABELS[link.platform] ?? link.platform}
                     </span>
-                    <span className="ml-2 text-sm text-gray-400 font-mono">
+                    <span className="ml-2 text-sm text-gray-600 dark:text-gray-400 font-mono">
                       {link.platform_user_id}
                     </span>
                     {link.verified_at && (
@@ -269,7 +269,7 @@ export default function Profile() {
               <select
                 value={linkForm.platform}
                 onChange={(e) => setLinkForm((f) => ({ ...f, platform: e.target.value }))}
-                className="rounded-lg bg-gray-800 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="discord">Discord</option>
                 <option value="matrix">Matrix</option>
@@ -283,7 +283,7 @@ export default function Profile() {
                 onChange={(e) =>
                   setLinkForm((f) => ({ ...f, platform_user_id: e.target.value }))
                 }
-                className="flex-1 rounded-lg bg-gray-800 px-3 py-2 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="flex-1 rounded-lg bg-gray-100 dark:bg-gray-800 px-3 py-2 text-sm placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               <button
                 type="submit"
@@ -294,7 +294,7 @@ export default function Profile() {
               </button>
             </div>
             {linkForm.platform === "discord" && (
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-gray-500">
                 Enter your Discord user ID (not your username). To find it: enable Developer Mode
                 in Discord → Settings → Advanced, then right-click your name and select "Copy User ID".
               </p>
