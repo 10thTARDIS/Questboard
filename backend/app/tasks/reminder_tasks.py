@@ -58,15 +58,19 @@ def send_session_reminder(
                         "extra": {
                             "confirmed_time": confirmed_time_iso,
                             "hours_until": hours_until,
+                            "title": title,
+                            "campaign_name": campaign_name,
                         },
                     },
                     headers={"X-Bot-Key": bot_key},
                     timeout=10,
                 )
+                return  # bot reachable — skip webhook to avoid double-posting
             except Exception as exc:
                 import logging
-                logging.getLogger(__name__).warning("Bot notify (session_reminder) failed: %s", exc)
-            return  # do not double-post to webhook
+                logging.getLogger(__name__).warning(
+                    "Bot notify (session_reminder) failed, falling back to webhook: %s", exc
+                )
 
         for backend in _BACKENDS:
             backend.send_reminder(
@@ -122,15 +126,21 @@ def send_session_confirmed(
                         "campaign_id": campaign_id,
                         "guild_id": guild_id,
                         "channel_id": notification_channel_id,
-                        "extra": {"confirmed_time": confirmed_time_iso},
+                        "extra": {
+                            "confirmed_time": confirmed_time_iso,
+                            "title": title,
+                            "campaign_name": campaign_name,
+                        },
                     },
                     headers={"X-Bot-Key": bot_key},
                     timeout=10,
                 )
+                return  # bot reachable — skip webhook to avoid double-posting
             except Exception as exc:
                 import logging
-                logging.getLogger(__name__).warning("Bot notify (session_confirmed) failed: %s", exc)
-            return  # do not double-post to webhook
+                logging.getLogger(__name__).warning(
+                    "Bot notify (session_confirmed) failed, falling back to webhook: %s", exc
+                )
 
         for backend in _BACKENDS:
             backend.send_confirmation(
@@ -283,24 +293,59 @@ def send_vote_notification(
     webhook_url: str,
     mode: str,
     voter_name: str | None = None,
+    *,
+    session_id: str = "",
+    campaign_id: str = "",
+    guild_id: str = "",
+    notification_channel_id: str = "",
+    bot_url: str = "",
+    bot_key: str = "",
 ) -> None:
-    """Post a vote notification to the campaign's webhook.
+    """Post a vote notification to the campaign's webhook or bot.
 
     mode="each_vote" — sent after every individual vote cast.
     mode="all_voted"  — sent once when all campaign members have voted.
+    If guild_id and bot_url are set, routes to the bot for a rich embed.
     """
     import httpx
 
     title = session_title or "Untitled Session"
+
+    if guild_id and bot_url:
+        try:
+            httpx.post(
+                f"{bot_url}/notify",
+                json={
+                    "event_type": "vote_update",
+                    "session_id": session_id,
+                    "campaign_id": campaign_id,
+                    "guild_id": guild_id,
+                    "channel_id": notification_channel_id,
+                    "extra": {
+                        "mode": mode,
+                        "voter_name": voter_name,
+                        "title": title,
+                        "campaign_name": campaign_name,
+                    },
+                },
+                headers={"X-Bot-Key": bot_key},
+                timeout=10,
+            )
+            return  # bot reachable — skip webhook
+        except Exception as exc:
+            import logging
+            logging.getLogger(__name__).warning(
+                "Bot notify (vote_update) failed, falling back to webhook: %s", exc
+            )
+
     if mode == "all_voted":
         message = f"🗳️ All players have voted on **{title}** in **{campaign_name}**!"
     else:
         voter = voter_name or "Someone"
         message = f"🗳️ **{voter}** voted on **{title}** in **{campaign_name}**."
 
-    payload = {"content": message}
     try:
-        resp = httpx.post(webhook_url, json=payload, timeout=10)
+        resp = httpx.post(webhook_url, json={"content": message}, timeout=10)
         resp.raise_for_status()
     except Exception as exc:
         raise self.retry(exc=exc)
@@ -378,6 +423,50 @@ async def _auto_close_voting_async(session_id: str) -> None:
 
 
 @celery_app.task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
+    name="app.tasks.reminder_tasks.send_session_completed",
+)
+def send_session_completed(
+    self,
+    session_id: str,
+    campaign_id: str,
+    campaign_name: str,
+    session_title: str,
+    guild_id: str,
+    notification_channel_id: str,
+    bot_url: str = "",
+    bot_key: str = "",
+) -> None:
+    """Notify the bot when a session auto-completes (transitions confirmed → completed).
+
+    The bot uses this to prompt the GM to start a recording or post a
+    "session complete" embed, and to check whether a transcript is still needed.
+    """
+    if not guild_id or not bot_url:
+        return
+    import httpx as _httpx
+    try:
+        resp = _httpx.post(
+            f"{bot_url}/notify",
+            json={
+                "event_type": "session_completed",
+                "session_id": session_id,
+                "campaign_id": campaign_id,
+                "guild_id": guild_id,
+                "channel_id": notification_channel_id,
+                "extra": {"title": session_title, "campaign_name": campaign_name},
+            },
+            headers={"X-Bot-Key": bot_key},
+            timeout=10,
+        )
+        resp.raise_for_status()
+    except Exception as exc:
+        raise self.retry(exc=exc)
+
+
+@celery_app.task(
     name="app.tasks.reminder_tasks.auto_complete_sessions",
 )
 def auto_complete_sessions() -> None:
@@ -398,7 +487,9 @@ async def _auto_complete_sessions_async() -> None:
     from sqlalchemy import select
 
     from app.database import AsyncSessionLocal
+    from app.models.campaign import Campaign
     from app.models.session import Session, SessionStatus
+    from app.services.settings_service import get_bot_api_key, get_bot_url
 
     now = datetime.now(timezone.utc)
     async with AsyncSessionLocal() as db:
@@ -409,10 +500,31 @@ async def _auto_complete_sessions_async() -> None:
             )
         )
         sessions = result.scalars().all()
+        if not sessions:
+            return
+
+        bot_url = await get_bot_url(db)
+        bot_key = await get_bot_api_key(db) or ""
+
         for session in sessions:
             session.status = SessionStatus.completed
-        if sessions:
-            await db.commit()
+
+        await db.commit()
+
+        # Notify the bot for each completed session (if bot-connected)
+        for session in sessions:
+            campaign = await db.get(Campaign, session.campaign_id)
+            if campaign and campaign.guild_id and bot_url:
+                send_session_completed.delay(
+                    session_id=str(session.id),
+                    campaign_id=str(campaign.id),
+                    campaign_name=campaign.name,
+                    session_title=session.title or "",
+                    guild_id=campaign.guild_id,
+                    notification_channel_id=campaign.notification_channel_id or "",
+                    bot_url=bot_url,
+                    bot_key=bot_key,
+                )
 
 
 @celery_app.task(

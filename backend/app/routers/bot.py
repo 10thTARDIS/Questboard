@@ -247,6 +247,8 @@ class SessionTimeslotsResponse(BaseModel):
     session_id: uuid.UUID
     campaign_name: str
     game_system: str | None
+    title: str | None
+    description: str | None
     reminder_offsets_minutes: list[int] | None
     slots: list[TimeSlotDetail]
 
@@ -290,6 +292,8 @@ async def bot_session_timeslots(
         session_id=session.id,
         campaign_name=campaign.name if campaign else "",
         game_system=campaign.game_system if campaign else None,
+        title=session.title,
+        description=session.description,
         reminder_offsets_minutes=campaign.reminder_offsets_minutes if campaign else None,
         slots=slot_details,
     )
@@ -398,3 +402,203 @@ async def bot_store_linking_token(
 
     await store_discord_link_token(data.token, data.discord_user_id)
     return {"detail": "ok"}
+
+
+# ── Platform link removal ──────────────────────────────────────────────────────
+
+@router.delete("/bot/platform-links/discord/{discord_user_id}")
+async def bot_unlink_discord(
+    discord_user_id: str,
+    _: None = Depends(require_bot_auth),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Delete the Discord platform link for a user (called by /unlink slash command)."""
+    link = await db.scalar(
+        select(PlatformLink).where(
+            PlatformLink.platform == PlatformType.discord,
+            PlatformLink.platform_user_id == discord_user_id,
+        )
+    )
+    if link is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No Questboard user linked to that Discord ID",
+        )
+    await db.delete(link)
+    await db.commit()
+    return {"detail": "unlinked"}
+
+
+# ── Guild-scoped endpoints ─────────────────────────────────────────────────────
+
+class NextSessionResponse(BaseModel):
+    session_id: uuid.UUID
+    campaign_id: uuid.UUID
+    campaign_name: str
+    game_system: str | None
+    title: str | None
+    confirmed_time: datetime
+
+
+@router.get("/bot/guilds/{guild_id}/next-session", response_model=NextSessionResponse)
+async def bot_guild_next_session(
+    guild_id: str,
+    _: None = Depends(require_bot_auth),
+    db: AsyncSession = Depends(get_db),
+) -> NextSessionResponse:
+    """Return the next confirmed session for the Discord guild, or 404."""
+    now = datetime.now(timezone.utc)
+    row = await db.execute(
+        select(Session, Campaign)
+        .join(Campaign, Campaign.id == Session.campaign_id)
+        .where(
+            Campaign.guild_id == guild_id,
+            Session.status == SessionStatus.confirmed,
+            Session.confirmed_time > now,
+        )
+        .order_by(Session.confirmed_time.asc())
+        .limit(1)
+    )
+    result = row.one_or_none()
+    if result is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No upcoming confirmed session for this guild",
+        )
+    session, campaign = result
+    return NextSessionResponse(
+        session_id=session.id,
+        campaign_id=campaign.id,
+        campaign_name=campaign.name,
+        game_system=campaign.game_system,
+        title=session.title,
+        confirmed_time=session.confirmed_time,
+    )
+
+
+class SessionHistoryItem(BaseModel):
+    session_id: uuid.UUID
+    title: str | None
+    confirmed_time: datetime | None
+    summary: str
+
+
+@router.get(
+    "/bot/guilds/{guild_id}/sessions/history",
+    response_model=list[SessionHistoryItem],
+)
+async def bot_guild_session_history(
+    guild_id: str,
+    limit: int = 10,
+    _: None = Depends(require_bot_auth),
+    db: AsyncSession = Depends(get_db),
+) -> list[SessionHistoryItem]:
+    """Return recent completed sessions with summaries (for /ask context window)."""
+    limit = min(limit, 20)
+    rows = await db.execute(
+        select(Session)
+        .join(Campaign, Campaign.id == Session.campaign_id)
+        .where(
+            Campaign.guild_id == guild_id,
+            Session.status == SessionStatus.completed,
+            Session.summary.isnot(None),
+        )
+        .order_by(Session.confirmed_time.desc())
+        .limit(limit)
+    )
+    return [
+        SessionHistoryItem(
+            session_id=s.id,
+            title=s.title,
+            confirmed_time=s.confirmed_time,
+            summary=s.summary,
+        )
+        for s in rows.scalars().all()
+    ]
+
+
+# ── Session summary + notes ────────────────────────────────────────────────────
+
+class SessionSummaryResponse(BaseModel):
+    session_id: uuid.UUID
+    campaign_name: str
+    title: str | None
+    confirmed_time: datetime | None
+    summary: str | None
+    session_notes: str | None
+
+
+@router.get("/bot/sessions/{session_id}/summary", response_model=SessionSummaryResponse)
+async def bot_session_summary(
+    session_id: uuid.UUID,
+    _: None = Depends(require_bot_auth),
+    db: AsyncSession = Depends(get_db),
+) -> SessionSummaryResponse:
+    """Return a session's stored summary and GM notes (for /recap command)."""
+    session = await db.get(Session, session_id)
+    if session is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    campaign = await db.get(Campaign, session.campaign_id)
+    return SessionSummaryResponse(
+        session_id=session.id,
+        campaign_name=campaign.name if campaign else "",
+        title=session.title,
+        confirmed_time=session.confirmed_time,
+        summary=session.summary,
+        session_notes=session.session_notes,
+    )
+
+
+class BotNoteRequest(BaseModel):
+    discord_user_id: str
+    note: str
+
+
+@router.post("/bot/sessions/{session_id}/notes", status_code=status.HTTP_201_CREATED)
+async def bot_create_note(
+    session_id: uuid.UUID,
+    data: BotNoteRequest,
+    _: None = Depends(require_bot_auth),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Create or append to a private session note on behalf of a Discord user (/note command)."""
+    from app.models.session_note import NoteVisibility, SessionNote
+    from datetime import datetime, timezone
+
+    link = await db.scalar(
+        select(PlatformLink).where(
+            PlatformLink.platform == PlatformType.discord,
+            PlatformLink.platform_user_id == data.discord_user_id,
+        )
+    )
+    if link is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No Questboard user linked to that Discord ID",
+        )
+
+    session = await db.get(Session, session_id)
+    if session is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+
+    existing = await db.scalar(
+        select(SessionNote).where(
+            SessionNote.session_id == session_id,
+            SessionNote.user_id == link.user_id,
+            SessionNote.visibility == NoteVisibility.private,
+        )
+    )
+    if existing is None:
+        note = SessionNote(
+            session_id=session_id,
+            user_id=link.user_id,
+            content=data.note,
+            visibility=NoteVisibility.private,
+        )
+        db.add(note)
+    else:
+        existing.content = existing.content + "\n" + data.note
+        existing.updated_at = datetime.now(timezone.utc)
+
+    await db.commit()
+    return {"detail": "Note saved"}

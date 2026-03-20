@@ -80,6 +80,14 @@ async def submit_vote(
             from app.tasks.reminder_tasks import send_vote_notification
 
             mode = campaign.vote_notification_mode
+            bot_kwargs = dict(
+                session_id=str(session.id),
+                campaign_id=str(campaign.id),
+                guild_id=campaign.guild_id or "",
+                notification_channel_id=campaign.notification_channel_id or "",
+                bot_url=settings.questboard_bot_url,
+                bot_key=settings.bot_api_key,
+            )
             if mode == "each_vote":
                 send_vote_notification.delay(
                     campaign_name=campaign.name,
@@ -87,6 +95,7 @@ async def submit_vote(
                     webhook_url=webhook_url,
                     mode="each_vote",
                     voter_name=current_user.effective_display_name,
+                    **bot_kwargs,
                 )
             elif mode == "all_voted":
                 # Check if every campaign member has cast at least one vote
@@ -106,6 +115,7 @@ async def submit_vote(
                         session_title=session.title or "Untitled Session",
                         webhook_url=webhook_url,
                         mode="all_voted",
+                        **bot_kwargs,
                     )
 
     return vote
