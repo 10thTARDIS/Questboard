@@ -18,7 +18,7 @@
     "@vitejs/plugin-react": "6.0.1",
     "autoprefixer": "10.4.27",
     "eslint": "10.0.3",
-    "postcss": "8.5.8",
+    "postcss": "8.5.10",
     "@tailwindcss/postcss": "4.2.1",
     "tailwindcss": "4.2.1",
     "vite": "8.0.0"
